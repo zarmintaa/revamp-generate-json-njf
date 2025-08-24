@@ -148,113 +148,113 @@ const downloadJsonHandler = () => {
         <pre class="bg-light p-3 rounded">{{ JSON.stringify(templatePreview, null, 2) }}</pre>
       </div>
     </div>
+  </div>
 
-    <section class="mt-4">
-      <div class="card">
-        <div class="card-header">
-          <h5>File Upload - {{ title }}</h5>
+  <section class="mt-4">
+    <div class="card">
+      <div class="card-header">
+        <h5>File Upload - {{ title }}</h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Select File Type</label>
+          <select v-model="fileType" class="form-select">
+            <option value="EXCEL">Excel</option>
+            <!--              <option value="JSON">JSON</option>-->
+          </select>
         </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label class="form-label">Select File Type</label>
-            <select v-model="fileType" class="form-select">
-              <option value="EXCEL">Excel</option>
-              <!--              <option value="JSON">JSON</option>-->
-            </select>
-          </div>
 
-          <div class="mb-3">
-            <label class="form-label">Upload {{ fileType }} File</label>
-            <input
-              :accept="fileType === 'JSON' ? '.json' : '.xlsx, .xls, .xlsm'"
-              class="form-control"
-              type="file"
-              @change="handleFileChange"
+        <div class="mb-3">
+          <label class="form-label">Upload {{ fileType }} File</label>
+          <input
+            :accept="fileType === 'JSON' ? '.json' : '.xlsx, .xls, .xlsm'"
+            class="form-control"
+            type="file"
+            @change="handleFileChange"
+          />
+        </div>
+
+        <div v-if="errorMessage" class="alert alert-danger mt-3">
+          {{ errorMessage }}
+        </div>
+
+        <button
+          :disabled="isFileNotReady || isProses"
+          class="btn btn-primary mt-3"
+          @click="processFile"
+        >
+          <span v-if="isProses" class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            Processing...
+          </span>
+          <span v-else>Process File</span>
+        </button>
+
+        <div class="mt-4">
+          <Properties>
+            <PropertiesItem
+              :input-properties="fileName"
+              input-label="File Name"
+              input-properties-error="File didn't process yet"
             />
+            <PropertiesItem
+              :input-properties="docNoApp"
+              input-label="Document Number"
+              input-properties-error="Not specified"
+            />
+          </Properties>
+        </div>
+
+        <div v-if="fileData" class="card mt-4">
+          <div class="card-header">Result Upload Data ({{ fileData.type.toUpperCase() }})</div>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th v-for="(header, index) in fileData.headers" :key="index">
+                    {{ header }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, rowIndex) in fileData.data" :key="rowIndex">
+                  <td v-for="(value, key) in row" :key="key">
+                    {{ value === null ? 'null' : value }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="fileData && fileData.type === 'json'" class="card mt-3">
+          <div class="card">
+            <div class="card-header">Raw JSON Data</div>
+            <pre class="bg-light p-3 rounded">{{ JSON.stringify(fileData.data, null, 2) }}</pre>
+          </div>
+        </div>
+
+        <div v-if="fileData" class="d-flex gap-4">
+          <div class="mt-4 d-flex gap-2">
+            <button :disabled="isProses" class="btn btn-success" @click="downloadJsonHandler">
+              Download JSON Template
+            </button>
           </div>
 
-          <div v-if="errorMessage" class="alert alert-danger mt-3">
-            {{ errorMessage }}
-          </div>
-
-          <button
-            :disabled="isFileNotReady || isProses"
-            class="btn btn-primary mt-3"
-            @click="processFile"
-          >
-            <span v-if="isProses" class="d-flex align-items-center gap-2">
-              <span class="spinner-border spinner-border-sm" role="status"></span>
-              Processing...
-            </span>
-            <span v-else>Process File</span>
-          </button>
-
-          <div class="mt-4">
-            <Properties>
-              <PropertiesItem
-                :input-properties="fileName"
-                input-label="File Name"
-                input-properties-error="File didn't process yet"
-              />
-              <PropertiesItem
-                :input-properties="docNoApp"
-                input-label="Document Number"
-                input-properties-error="Not specified"
-              />
-            </Properties>
-          </div>
-
-          <div v-if="fileData" class="card mt-4">
-            <div class="card-header">Result Upload Data ({{ fileData.type.toUpperCase() }})</div>
-            <div class="table-responsive">
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th v-for="(header, index) in fileData.headers" :key="index">
-                      {{ header }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(row, rowIndex) in fileData.data" :key="rowIndex">
-                    <td v-for="(value, key) in row" :key="key">
-                      {{ value === null ? 'null' : value }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div v-if="fileData && fileData.type === 'json'" class="card mt-3">
-            <div class="card">
-              <div class="card-header">Raw JSON Data</div>
-              <pre class="bg-light p-3 rounded">{{ JSON.stringify(fileData.data, null, 2) }}</pre>
-            </div>
-          </div>
-
-          <div v-if="fileData" class="d-flex gap-4">
-            <div class="mt-4 d-flex gap-2">
-              <button :disabled="isProses" class="btn btn-success" @click="downloadJsonHandler">
-                Download JSON Template
-              </button>
-            </div>
-
-            <div class="mt-4 d-flex gap-2">
-              <button
-                :disabled="isProses"
-                class="btn btn-primary"
-                data-bs-toggle="modal"
-                data-bs-target="#jsonPreviewModal"
-              >
-                Preview JSON Template
-              </button>
-            </div>
+          <div class="mt-4 d-flex gap-2">
+            <button
+              :disabled="isProses"
+              class="btn btn-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#jsonPreviewModal"
+            >
+              Preview JSON Template
+            </button>
           </div>
         </div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 
   <!-- JSON Preview Modal -->
   <div
