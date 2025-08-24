@@ -1,6 +1,7 @@
 <script setup>
+import { debounce } from '@/utils/debounce'
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 // --- INPUTS & OPTIONS ---
 const principal = ref(25000000)
@@ -8,6 +9,20 @@ const tenure = ref(24)
 const annualRate = ref(12)
 const calculationMethod = ref('annuity') // 'annuity' or 'flat' -> OPSI BARU
 const roundingOption = ref('thousand')
+
+const principalInput = ref(principal.value)
+const tenureInput = ref(tenure.value)
+const annualRateInput = ref(annualRate.value)
+
+const updateCalculationState = debounce(() => {
+  principal.value = Number(principalInput.value) || 0
+  tenure.value = Number(tenureInput.value) || 0
+  annualRate.value = Number(annualRateInput.value) || 0
+}, 800) // Tunda kalkulasi selama 500ms setelah user berhenti mengetik
+
+watch([principalInput, tenureInput, annualRateInput], () => {
+  updateCalculationState()
+})
 
 // --- HELPERS ---
 const numPayments = computed(() => tenure.value)
@@ -188,7 +203,7 @@ const downloadHandler = async () => {
                 <input
                   type="number"
                   class="form-control"
-                  v-model.number="principal"
+                  v-model.number="principalInput"
                   placeholder="25000000"
                 />
               </div>
@@ -198,7 +213,7 @@ const downloadHandler = async () => {
                 <input
                   type="number"
                   class="form-control"
-                  v-model.number="tenure"
+                  v-model.number="tenureInput"
                   placeholder="24"
                 />
               </div>
@@ -209,7 +224,7 @@ const downloadHandler = async () => {
                   type="number"
                   step="0.1"
                   class="form-control"
-                  v-model.number="annualRate"
+                  v-model.number="annualRateInput"
                   placeholder="12"
                 />
               </div>
