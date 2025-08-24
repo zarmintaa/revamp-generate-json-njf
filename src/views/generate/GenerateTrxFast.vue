@@ -109,6 +109,10 @@ const downloadJsonHandler = () => {
     errorMessage.value = error.message
   }
 }
+
+const copyToClipboardHandler = async () => {
+  await copyToClipboard(templateWithFileData.value)
+}
 </script>
 
 <template>
