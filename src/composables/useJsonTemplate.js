@@ -8,12 +8,14 @@ export function useJsonTemplate() {
 
   // Generic template generator - bisa di-override untuk template yang berbeda
   const generateTemplate = (config, fileData = null) => {
-    const { senderDocNo, jsonName, sourceSystem } = config
+    const { docNo, jsonName, sourceSystem, nik } = config
 
     let msgContent = []
     let templateJson = {}
+    let dataTrx = []
     if (fileData?.value) {
       msgContent = fileData.value.data.map((record) => JSON.stringify({ data: { ...record } }))
+      dataTrx = fileData.value
     }
 
     if (jsonName == 'MASTER' || jsonName == 'SCHD') {
@@ -24,9 +26,36 @@ export function useJsonTemplate() {
             msgContent,
             jsonName,
             sourceSystem,
-            senderDocNo,
+            senderDocNo: docNo,
           },
         ],
+      }
+    }
+
+    if (jsonName == 'TRX-FAST') {
+      let totalRow = 0
+      let totalAmount = 0
+      if (dataTrx.data) {
+        totalRow = dataTrx.data.length
+        if (totalRow > 0) {
+          dataTrx.data.forEach((item) => {
+            if (item.AIT_AMOUNT1) {
+              totalAmount += +item.AIT_AMOUNT1
+            } else {
+              totalAmount += 0
+            }
+          })
+        } else {
+          totalAmount = 0
+        }
+      }
+
+      templateJson = {
+        docNoApp: docNo,
+        jumlahRow: totalRow,
+        jumlahAmount: totalAmount,
+        useNik: nik,
+        data: dataTrx.data,
       }
     }
 
@@ -52,7 +81,6 @@ export function useJsonTemplate() {
   }
 
   const copyToClipboard = async (templateData) => {
-    const toast = useToast()
     try {
       await navigator.clipboard.writeText(JSON.stringify(templateData, null, 2))
       copyStatus.value = 'Copied!'
@@ -60,7 +88,7 @@ export function useJsonTemplate() {
         copyStatus.value = ''
       }, 2000)
       // toast.info('File Processing', 'File success')
-      toast.success('Copy Text', 'Success copied text', 3000)
+      // toast.success('Copy Text', 'Success copied text', 3000)
     } catch (err) {
       copyStatus.value = 'Failed to copy'
       setTimeout(() => {

@@ -6,7 +6,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/dashboard',
+      redirect: '/generate-master',
       component: () => import('@/layouts/BaseLayout.vue'),
       children: [
         {
@@ -18,6 +18,11 @@ const router = createRouter({
           path: 'generate-schd',
           name: 'generate-schd',
           component: () => import('@/views/generate/GenerateSchd.vue'),
+        },
+        {
+          path: 'generate-trx-fast',
+          name: 'generate-trx-fast',
+          component: () => import('@/views/generate/GenerateTrxFast.vue'),
         },
         {
           path: 'dashboard',

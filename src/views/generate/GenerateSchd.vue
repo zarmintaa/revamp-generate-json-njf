@@ -83,7 +83,7 @@ const templatePreview = computed(() => {
   const templateIsValid = validateAll()
   if (templateIsValid) {
     return generateTemplate({
-      senderDocNo: senderDocNo.value,
+      docNo: senderDocNo.value,
       jsonName: jsonName.value,
       sourceSystem: sourceSystem.value,
     })
@@ -96,7 +96,7 @@ const templateWithFileData = computed(() => {
   if (validateAll()) {
     return generateTemplate(
       {
-        senderDocNo: senderDocNo.value,
+        docNo: senderDocNo.value,
         jsonName: jsonName.value,
         sourceSystem: sourceSystem.value,
       },
