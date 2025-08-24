@@ -43,13 +43,12 @@ export const sideBarItem = [
         to: '/create-schedule',
         external: false,
       },
-
-      {
-        type: 'link',
-        title: 'TRX-FAST',
-        to: '/generate-trx-fast',
-        external: false,
-      },
+      // {
+      //   type: 'link',
+      //   title: 'TRX-FAST',
+      //   to: '/generate-trx-fast',
+      //   external: false,
+      // },
     ],
   },
   // { type: 'caption', title: 'Home' },
