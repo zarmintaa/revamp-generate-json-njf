@@ -1,5 +1,6 @@
 // composables/useJsonTemplate.js
 import { ref, computed } from 'vue'
+import { useToast } from './useToast'
 
 export function useJsonTemplate() {
   const isPreviewJsonTemplate = ref(false)
@@ -15,7 +16,7 @@ export function useJsonTemplate() {
       msgContent = fileData.value.data.map((record) => JSON.stringify({ data: { ...record } }))
     }
 
-    if (jsonName == 'MASTER') {
+    if (jsonName == 'MASTER' || jsonName == 'SCHD') {
       templateJson = {
         data: [
           {
@@ -51,14 +52,15 @@ export function useJsonTemplate() {
   }
 
   const copyToClipboard = async (templateData) => {
-    console.log(templateData)
-
+    const toast = useToast()
     try {
       await navigator.clipboard.writeText(JSON.stringify(templateData, null, 2))
       copyStatus.value = 'Copied!'
       setTimeout(() => {
         copyStatus.value = ''
       }, 2000)
+      // toast.info('File Processing', 'File success')
+      toast.success('Copy Text', 'Success copied text', 3000)
     } catch (err) {
       copyStatus.value = 'Failed to copy'
       setTimeout(() => {

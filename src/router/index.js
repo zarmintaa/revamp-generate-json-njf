@@ -15,6 +15,11 @@ const router = createRouter({
           component: () => import('@/views/generate/GenerateMaster.vue'),
         },
         {
+          path: 'generate-schd',
+          name: 'generate-schd',
+          component: () => import('@/views/generate/GenerateSchd.vue'),
+        },
+        {
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('@/views/Dashboard.vue'),

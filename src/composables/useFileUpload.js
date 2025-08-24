@@ -1,6 +1,7 @@
 // composables/useFileUpload.js
 import { ref } from 'vue'
 import * as ExcelJS from 'exceljs'
+import { useToast } from './useToast'
 
 export function useFileUpload() {
   const fileInput = ref(null)
@@ -112,6 +113,8 @@ export function useFileUpload() {
     errorMessage.value = null
     fileData.value = null
 
+    const toast = useToast()
+
     try {
       if (!fileInput.value) {
         throw new Error(`Please select a ${fileType.value} file first`)
@@ -127,8 +130,10 @@ export function useFileUpload() {
       }
 
       fileData.value = data
+      toast.info('File Processing', 'File success')
     } catch (error) {
       console.error('Error processing file:', error)
+      toast.error('Error processing file', error.message || 'Failed to process file')
       errorMessage.value = error.message || 'Failed to process file'
     } finally {
       isProses.value = false
