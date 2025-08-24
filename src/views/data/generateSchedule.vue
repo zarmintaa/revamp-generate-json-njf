@@ -44,7 +44,7 @@ const monthlyPayment = computed(() => {
   return roundAmount(monthlyPaymentRaw.value, roundingOption.value)
 })
 
-// Schedule perhitungan
+// Schedule perhitungan - FIXED VERSION
 const schedule = computed(() => {
   let remainingBalance = principal.value
   const paymentSchedule = []
@@ -53,15 +53,24 @@ const schedule = computed(() => {
     // Round the interest payment first
     const interestPayment = roundAmount(remainingBalance * monthlyRate.value, roundingOption.value)
 
-    // Principal payment = total payment - rounded interest
-    const principalPayment = monthlyPayment.value - interestPayment
+    let principalPayment, actualMonthlyPayment
 
-    // Update remaining balance
-    remainingBalance = Math.max(0, remainingBalance - principalPayment)
+    // PERBAIKAN: Pada pembayaran terakhir, bayar sisa pokok sepenuhnya
+    if (month === numPayments.value) {
+      // Pembayaran terakhir: sesuaikan agar sisa pokok = 0
+      principalPayment = remainingBalance
+      actualMonthlyPayment = interestPayment + principalPayment
+      remainingBalance = 0
+    } else {
+      // Pembayaran normal
+      principalPayment = monthlyPayment.value - interestPayment
+      actualMonthlyPayment = monthlyPayment.value
+      remainingBalance = Math.max(0, remainingBalance - principalPayment)
+    }
 
     paymentSchedule.push({
       month,
-      monthlyPayment: monthlyPayment.value,
+      monthlyPayment: actualMonthlyPayment, // Gunakan actual payment
       principalPayment,
       interestPayment,
       remainingBalance: roundAmount(remainingBalance, roundingOption.value),
@@ -71,18 +80,18 @@ const schedule = computed(() => {
   return paymentSchedule
 })
 
-// Summary calculations
+// Summary calculations - UPDATED
 const summary = computed(() => {
   const totalInterest = schedule.value.reduce((sum, payment) => sum + payment.interestPayment, 0)
+  const totalPayment = schedule.value.reduce((sum, payment) => sum + payment.monthlyPayment, 0)
 
   return {
-    monthlyPayment: monthlyPayment.value,
-    totalPayment: monthlyPayment.value * numPayments.value,
+    monthlyPayment: monthlyPayment.value, // Payment normal (kecuali yang terakhir)
+    totalPayment, // Total actual payment (termasuk adjustment terakhir)
     totalInterest,
     totalPrincipal: principal.value,
   }
 })
-
 // Format currency function
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
