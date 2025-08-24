@@ -25,6 +25,33 @@ export const sideBarItem = [
       },
     ],
   },
+  { type: 'caption', title: 'Data' },
+  {
+    type: 'submenu',
+    title: 'Generate DATA',
+    icon: 'ti-layout-grid',
+    children: [
+      {
+        type: 'link',
+        title: 'MASTER PPD',
+        to: '/create-master-ppd',
+        external: false,
+      },
+      {
+        type: 'link',
+        title: 'SCHEDULE',
+        to: '/create-schedule',
+        external: false,
+      },
+
+      {
+        type: 'link',
+        title: 'TRX-FAST',
+        to: '/generate-trx-fast',
+        external: false,
+      },
+    ],
+  },
   // { type: 'caption', title: 'Home' },
   // { type: 'link', title: 'Dashboard', to: '/dashboard', icon: 'ti-home' },
   // {

@@ -25,6 +25,16 @@ const router = createRouter({
           component: () => import('@/views/generate/GenerateTrxFast.vue'),
         },
         {
+          path: 'create-schedule',
+          name: 'create-schedule',
+          component: () => import('@/views/data/generateSchedule.vue'),
+        },
+        {
+          path: 'create-master-ppd',
+          name: 'create-master-ppd',
+          component: () => import('@/views/data/generateDataMaster.vue'),
+        },
+        {
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('@/views/Dashboard.vue'),
