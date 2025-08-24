@@ -1,20 +1,23 @@
 <script setup>
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 
-// Reactive variables
-const principal = ref(25000000) // 25 juta
-const tenure = ref(24) // 2 tahun = 24 bulan
-const annualRate = ref(12) // 12% per tahun
+// --- INPUTS & OPTIONS ---
+const principal = ref(25000000)
+const tenure = ref(24)
+const annualRate = ref(12)
+const calculationMethod = ref('annuity') // 'annuity' or 'flat' -> OPSI BARU
+const roundingOption = ref('thousand')
 
-// Computed properties untuk perhitungan
-const monthlyRate = computed(() => annualRate.value / 100 / 12)
+// --- HELPERS ---
 const numPayments = computed(() => tenure.value)
-
-// Pilihan pembulatan
-const roundingOption = ref('hundred') // 'none', 'hundred', 'thousand', 'ten-thousand'
-
-// Fungsi pembulatan
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
 const roundAmount = (amount, option) => {
   switch (option) {
     case 'hundred':
@@ -24,103 +27,163 @@ const roundAmount = (amount, option) => {
     case 'ten-thousand':
       return Math.round(amount / 10000) * 10000
     default:
-      return amount
+      return Math.round(amount) // Round to nearest integer by default
   }
 }
 
-// Rumus PMT (Payment): P * [r(1+r)^n] / [(1+r)^n - 1]
-const monthlyPaymentRaw = computed(() => {
-  const rate = monthlyRate.value
+// ==========================================================
+// --- ANNUITY (EFFECTIVE RATE) CALCULATION ---
+// ==========================================================
+const annuityMonthlyRate = computed(() => annualRate.value / 100 / 12)
+
+const annuityMonthlyPaymentRaw = computed(() => {
+  const rate = annuityMonthlyRate.value
   const n = numPayments.value
   const p = principal.value
-
-  if (rate === 0) return p / n // Jika rate 0%
-
+  if (rate === 0) return p / n
   return (p * (rate * Math.pow(1 + rate, n))) / (Math.pow(1 + rate, n) - 1)
 })
 
-// Rumus PMT (Payment): P * [r(1+r)^n] / [(1+r)^n - 1]
-const monthlyPayment = computed(() => {
-  return roundAmount(monthlyPaymentRaw.value, roundingOption.value)
+const annuityMonthlyPayment = computed(() => {
+  return roundAmount(annuityMonthlyPaymentRaw.value, roundingOption.value)
 })
 
-// Schedule perhitungan - FIXED VERSION
-const schedule = computed(() => {
+// KODE PERBAIKAN UNTUK ANNUITY SCHEDULE
+const annuitySchedule = computed(() => {
+  if (numPayments.value <= 0) return []
+
   let remainingBalance = principal.value
   const paymentSchedule = []
-
   for (let month = 1; month <= numPayments.value; month++) {
-    // Round the interest payment first
-    const interestPayment = roundAmount(remainingBalance * monthlyRate.value, roundingOption.value)
-
+    // Gunakan 'none' atau pembulatan ke satuan terdekat untuk kalkulasi bunga internal
+    const interestPayment = roundAmount(remainingBalance * annuityMonthlyRate.value, 'none')
     let principalPayment, actualMonthlyPayment
 
-    // PERBAIKAN: Pada pembayaran terakhir, bayar sisa pokok sepenuhnya
     if (month === numPayments.value) {
-      // Pembayaran terakhir: sesuaikan agar sisa pokok = 0
+      // Logika untuk angsuran terakhir sudah BENAR, pertahankan.
       principalPayment = remainingBalance
       actualMonthlyPayment = interestPayment + principalPayment
       remainingBalance = 0
     } else {
-      // Pembayaran normal
-      principalPayment = monthlyPayment.value - interestPayment
-      actualMonthlyPayment = monthlyPayment.value
+      actualMonthlyPayment = annuityMonthlyPayment.value
+      principalPayment = actualMonthlyPayment - interestPayment
       remainingBalance = Math.max(0, remainingBalance - principalPayment)
     }
 
     paymentSchedule.push({
       month,
-      monthlyPayment: actualMonthlyPayment, // Gunakan actual payment
+      monthlyPayment: actualMonthlyPayment,
       principalPayment,
       interestPayment,
-      remainingBalance: roundAmount(remainingBalance, roundingOption.value),
+      // PERBAIKAN: Bulatkan sisa pokok HANYA untuk tampilan di tabel
+      remainingBalance: roundAmount(remainingBalance, 'none'),
     })
   }
-
   return paymentSchedule
 })
 
-// Summary calculations - UPDATED
-const summary = computed(() => {
-  const totalInterest = schedule.value.reduce((sum, payment) => sum + payment.interestPayment, 0)
-  const totalPayment = schedule.value.reduce((sum, payment) => sum + payment.monthlyPayment, 0)
-
+const annuitySummary = computed(() => {
+  const totalInterest = annuitySchedule.value.reduce((sum, p) => sum + p.interestPayment, 0)
+  const totalPayment = annuitySchedule.value.reduce((sum, p) => sum + p.monthlyPayment, 0)
   return {
-    monthlyPayment: monthlyPayment.value, // Payment normal (kecuali yang terakhir)
-    totalPayment, // Total actual payment (termasuk adjustment terakhir)
+    monthlyPayment: annuityMonthlyPayment.value,
+    totalPayment,
     totalInterest,
     totalPrincipal: principal.value,
   }
 })
-// Format currency function
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(amount)
-}
 
+// ==========================================================
+// --- FLAT RATE CALCULATION (LOGIKA BARU) ---
+// ==========================================================
+const flatPrincipalPerMonth = computed(() => {
+  if (numPayments.value === 0) return 0
+  return principal.value / numPayments.value
+})
+const flatInterestPerMonth = computed(() => {
+  return (principal.value * (annualRate.value / 100)) / 12
+})
+const flatMonthlyPayment = computed(() => {
+  return flatPrincipalPerMonth.value + flatInterestPerMonth.value
+})
+
+const flatSchedule = computed(() => {
+  if (numPayments.value <= 0) return []
+
+  let remainingBalance = principal.value
+  const paymentSchedule = []
+
+  // Hitung pembayaran pokok dan bunga yang sudah dibulatkan sebagai dasar
+  const roundedPrincipalPayment = roundAmount(flatPrincipalPerMonth.value, roundingOption.value)
+  const roundedInterestPayment = roundAmount(flatInterestPerMonth.value, roundingOption.value)
+
+  for (let month = 1; month <= numPayments.value; month++) {
+    let principalForThisMonth
+    let monthlyPaymentForThisMonth
+
+    if (month === numPayments.value) {
+      // Untuk angsuran TERAKHIR, lunasi semua sisa pokoknya.
+      principalForThisMonth = remainingBalance
+      monthlyPaymentForThisMonth = principalForThisMonth + roundedInterestPayment
+    } else {
+      // Untuk angsuran normal, gunakan angka yang sudah dibulatkan.
+      principalForThisMonth = roundedPrincipalPayment
+      monthlyPaymentForThisMonth = roundedPrincipalPayment + roundedInterestPayment
+    }
+
+    // Kurangi sisa pokok dengan pembayaran pokok bulan ini
+    remainingBalance = Math.max(0, remainingBalance - principalForThisMonth)
+
+    paymentSchedule.push({
+      month,
+      monthlyPayment: monthlyPaymentForThisMonth,
+      principalPayment: principalForThisMonth,
+      interestPayment: roundedInterestPayment,
+      remainingBalance: remainingBalance,
+    })
+  }
+  return paymentSchedule
+})
+
+const flatSummary = computed(() => {
+  const totalInterest = flatInterestPerMonth.value * numPayments.value
+  const totalPayment = principal.value + totalInterest
+  return {
+    monthlyPayment: roundAmount(flatMonthlyPayment.value, roundingOption.value),
+    totalPayment: roundAmount(totalPayment, roundingOption.value),
+    totalInterest: roundAmount(totalInterest, roundingOption.value),
+    totalPrincipal: principal.value,
+  }
+})
+
+// ==========================================================
+// --- LOGIC SWITCH (PENGGABUNGAN) ---
+// ==========================================================
+const finalSchedule = computed(() => {
+  return calculationMethod.value === 'flat' ? flatSchedule.value : annuitySchedule.value
+})
+const finalSummary = computed(() => {
+  return calculationMethod.value === 'flat' ? flatSummary.value : annuitySummary.value
+})
+
+// --- EXCEL EXPORT ---
 const downloadHandler = async () => {
-  const fileName = `export_${new Date().toISOString()}_schedule_${tenure.value}_${annualRate.value}.xlsx`
-  const data = await exportToExcel(formatDataForExport(schedule.value), fileName)
+  const fileName = `simulasi_${calculationMethod.value}_${tenure.value}bln_${annualRate.value}persen.xlsx`
+  const data = await exportToExcel(formatDataForExport(finalSchedule.value), fileName)
   downloadExcelFile(data.buffer, fileName)
-  console.log(data)
 }
 </script>
 
 <template>
-  <div class="container-fluid py-4" style="background-color: #f8f9fa; min-height: 100vh">
+  <div class="container-fluid py-4">
     <div class="row justify-content-center">
       <div class="col-12">
-        <!-- Header Card -->
         <div class="card shadow-sm mb-4">
           <div class="card-body">
             <h1 class="card-title text-center mb-4">Simulasi Kartu Piutang Nasabah</h1>
 
-            <!-- Input Parameters -->
-            <div class="row g-3 mb-4">
-              <div class="col-md-4">
+            <div class="row g-3 mb-4 align-items-end">
+              <div class="col-md-3">
                 <label class="form-label fw-semibold">Pokok Pinjaman</label>
                 <input
                   type="number"
@@ -128,10 +191,9 @@ const downloadHandler = async () => {
                   v-model.number="principal"
                   placeholder="25000000"
                 />
-                <small class="text-muted">{{ formatCurrency(principal) }}</small>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label fw-semibold">Tenor (Bulan)</label>
                 <input
                   type="number"
@@ -141,7 +203,7 @@ const downloadHandler = async () => {
                 />
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label fw-semibold">Rate Tahunan (%)</label>
                 <input
                   type="number"
@@ -151,49 +213,56 @@ const downloadHandler = async () => {
                   placeholder="12"
                 />
               </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Metode Perhitungan Bunga</label>
+                <select class="form-select" v-model="calculationMethod">
+                  <option value="annuity">Anuitas (Bunga Efektif)</option>
+                  <option value="flat">Flat</option>
+                </select>
+              </div>
             </div>
 
-            <!-- Summary Cards -->
             <div class="row g-3">
               <div class="col-md-3">
-                <div class="card bg-primary bg-opacity-10 border-primary">
+                <div class="card bg-primary bg-opacity-10 border-primary h-100">
                   <div class="card-body text-center">
                     <h6 class="card-subtitle text-primary fw-semibold">Angsuran Bulanan</h6>
                     <h5 class="card-title text-primary fw-bold">
-                      {{ formatCurrency(summary.monthlyPayment) }}
+                      {{ formatCurrency(finalSummary.monthlyPayment) }}
                     </h5>
                   </div>
                 </div>
               </div>
 
               <div class="col-md-3">
-                <div class="card bg-success bg-opacity-10 border-success">
+                <div class="card bg-success bg-opacity-10 border-success h-100">
                   <div class="card-body text-center">
                     <h6 class="card-subtitle text-success fw-semibold">Total Pokok</h6>
                     <h5 class="card-title text-success fw-bold">
-                      {{ formatCurrency(summary.totalPrincipal) }}
+                      {{ formatCurrency(finalSummary.totalPrincipal) }}
                     </h5>
                   </div>
                 </div>
               </div>
 
               <div class="col-md-3">
-                <div class="card bg-warning bg-opacity-10 border-warning">
+                <div class="card bg-warning bg-opacity-10 border-warning h-100">
                   <div class="card-body text-center">
                     <h6 class="card-subtitle text-warning fw-semibold">Total Bunga</h6>
                     <h5 class="card-title text-warning fw-bold">
-                      {{ formatCurrency(summary.totalInterest) }}
+                      {{ formatCurrency(finalSummary.totalInterest) }}
                     </h5>
                   </div>
                 </div>
               </div>
 
               <div class="col-md-3">
-                <div class="card bg-danger bg-opacity-10 border-danger">
+                <div class="card bg-danger bg-opacity-10 border-danger h-100">
                   <div class="card-body text-center">
                     <h6 class="card-subtitle text-danger fw-semibold">Total Pembayaran</h6>
                     <h5 class="card-title text-danger fw-bold">
-                      {{ formatCurrency(summary.totalPayment) }}
+                      {{ formatCurrency(finalSummary.totalPayment) }}
                     </h5>
                   </div>
                 </div>
@@ -202,20 +271,17 @@ const downloadHandler = async () => {
           </div>
         </div>
 
-        <!-- Payment Schedule -->
         <div class="card shadow-sm">
-          <div class="card-header">
-            <section class="d-flex align-items-center justify-content-between">
-              <h5 class="card-title fw-medium mb-0">Jadwal Angsuran</h5>
-              <button type="button" class="btn btn-outline-primary" @click="downloadHandler">
-                Download
-              </button>
-            </section>
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="card-title fw-medium mb-0">Jadwal Angsuran</h5>
+            <button type="button" class="btn btn-outline-primary" @click="downloadHandler">
+              Download Excel
+            </button>
           </div>
           <div class="card-body">
             <div class="table-responsive">
               <table class="table table-hover">
-                <thead class="">
+                <thead>
                   <tr>
                     <th>Bulan</th>
                     <th class="text-end">Total Angsuran</th>
@@ -225,7 +291,7 @@ const downloadHandler = async () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="payment in schedule" :key="payment.month">
+                  <tr v-for="payment in finalSchedule" :key="payment.month">
                     <td class="fw-semibold">{{ payment.month }}</td>
                     <td class="text-end">{{ formatCurrency(payment.monthlyPayment) }}</td>
                     <td class="text-end text-success">
@@ -244,13 +310,15 @@ const downloadHandler = async () => {
           </div>
         </div>
 
-        <!-- Logic Explanation -->
         <div class="card shadow-sm mt-4">
           <div class="card-header">
-            <h5 class="card-title mb-0">Penjelasan Logic Perhitungan</h5>
+            <h5 class="card-title mb-0">
+              Penjelasan Logic: Metode
+              {{ calculationMethod === 'annuity' ? 'Anuitas (Efektif)' : 'Flat' }}
+            </h5>
           </div>
           <div class="card-body">
-            <div class="row g-4">
+            <div v-if="calculationMethod === 'annuity'" class="row g-4">
               <div class="col-md-6">
                 <h6 class="fw-bold text-primary">1. Metode Anuitas</h6>
                 <p class="text-muted">
@@ -285,6 +353,29 @@ const downloadHandler = async () => {
                 </ul>
               </div>
             </div>
+
+            <div v-if="calculationMethod === 'flat'" class="row g-4">
+              <div class="col-md-6">
+                <h6 class="fw-bold text-primary">1. Metode Flat</h6>
+                <p class="text-muted">
+                  Angsuran bulanan tetap dengan porsi pokok dan bunga yang juga selalu tetap. Bunga
+                  dihitung dari pokok pinjaman awal.
+                </p>
+                <h6 class="fw-bold text-primary">2. Karakteristik</h6>
+                <ul class="text-muted">
+                  <li>Jumlah bunga per bulan selalu sama.</li>
+                  <li>Jumlah pokok per bulan selalu sama.</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h6 class="fw-bold text-primary">3. Rumus Sederhana</h6>
+                <ul class="text-muted">
+                  <li><strong>Pokok/Bulan:</strong> Total Pokok ÷ Tenor</li>
+                  <li><strong>Bunga/Bulan:</strong> (Total Pokok × Rate Tahunan) ÷ 12</li>
+                  <li><strong>Angsuran:</strong> Pokok/Bulan + Bunga/Bulan</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -293,51 +384,43 @@ const downloadHandler = async () => {
 </template>
 
 <style scoped>
+/* Style Anda sudah bagus, tidak ada perubahan yang diperlukan */
 .card {
   border: none;
   border-radius: 12px;
 }
-
 .card-header {
   color: white;
   border-radius: 12px 12px 0 0 !important;
 }
-
 .table th {
   font-weight: 600;
   font-size: 0.9rem;
 }
-
 .table td {
   font-size: 0.9rem;
   vertical-align: middle;
 }
-
-.form-control:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: #667eea;
   box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
 }
-
 .bg-primary.bg-opacity-10 {
   background-color: rgba(13, 110, 253, 0.1) !important;
 }
-
 .bg-success.bg-opacity-10 {
   background-color: rgba(25, 135, 84, 0.1) !important;
 }
-
 .bg-warning.bg-opacity-10 {
   background-color: rgba(255, 193, 7, 0.1) !important;
 }
-
 .bg-danger.bg-opacity-10 {
   background-color: rgba(220, 53, 69, 0.1) !important;
 }
-
 .table-hover tbody tr:hover {
   background-color: rgba(102, 126, 234, 0.05);
 }
-
 @media (max-width: 768px) {
   .table-responsive {
     font-size: 0.8rem;
