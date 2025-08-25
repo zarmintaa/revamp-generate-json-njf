@@ -55,7 +55,11 @@ export function useFileUpload() {
               const rowData = {}
               row.eachCell((cell, colNumber) => {
                 const header = headers[colNumber - 1]
-                rowData[header] = cell.value
+                let resultReadRow = cell.value
+                if (resultReadRow === 'NULL') {
+                  resultReadRow = null
+                }
+                rowData[header] = resultReadRow
               })
               jsonData.push(rowData)
             }
