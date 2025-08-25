@@ -54,7 +54,7 @@ export function useJsonTemplate() {
         docNoApp: docNo,
         jumlahRow: totalRow,
         jumlahAmount: totalAmount,
-        useNik: nik,
+        userNik: nik,
         data: dataTrx.data || [],
       }
     }
