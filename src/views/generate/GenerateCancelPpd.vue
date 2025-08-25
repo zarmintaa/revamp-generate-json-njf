@@ -8,10 +8,10 @@ import { useJsonTemplate } from '@/composables/useJsonTemplate.js'
 import { useFileUpload } from '@/composables/useFileUpload'
 
 const route = useRoute()
-const title = route.meta?.title || 'Generate RC-SCHD'
+const title = route.meta?.title || 'Generate CANCEL PPD'
 
 const senderDocNo = ref(Utils.generateSenderDocNo())
-const jsonName = ref('RC_SCHD')
+const jsonName = ref('CANCEL_PPD')
 const sourceSystem = ref('AMAN')
 
 const docNoError = ref('')

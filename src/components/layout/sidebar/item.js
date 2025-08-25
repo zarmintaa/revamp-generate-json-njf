@@ -25,8 +25,19 @@ export const sideBarItem = [
       },
       {
         type: 'link',
+        title: 'RESCHD',
+        to: '/generate-re-schd',
+        external: false,
+      },
+      {
+        type: 'link',
         title: 'RC-SCHD',
         to: '/generate-rc-schd',
+        external: false,
+      },{
+        type: 'link',
+        title: 'CANCEL_PPD',
+        to: '/generate-cancel-ppd',
         external: false,
       },
     ],

@@ -18,7 +18,7 @@ export function useJsonTemplate() {
       dataTrx = fileData.value
     }
 
-    if (jsonName === 'MASTER' || jsonName === 'SCHD' || jsonName === 'RC_SCHD') {
+    if (jsonName === 'MASTER' || jsonName === 'SCHD' || jsonName === 'RC_SCHD' || jsonName === 'RESCHD' || jsonName === 'CANCEL_PPD') {
       templateJson = {
         data: [
           {

@@ -18,7 +18,7 @@ const updateCalculationState = debounce(() => {
   principal.value = Number(principalInput.value) || 0
   tenure.value = Number(tenureInput.value) || 0
   annualRate.value = Number(annualRateInput.value) || 0
-}, 800) // Tunda kalkulasi selama 500ms setelah user berhenti mengetik
+}, 800)
 
 watch([principalInput, tenureInput, annualRateInput], () => {
   updateCalculationState()
