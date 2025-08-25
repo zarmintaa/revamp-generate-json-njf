@@ -24,6 +24,11 @@ const router = createRouter({
           name: 'generate-trx-fast',
           component: () => import('@/views/generate/GenerateTrxFast.vue'),
         },
+          {
+              path: 'generate-rc-schd',
+              name: 'generate-rc-schd',
+              component: () => import('@/views/generate/GenerateRcSchd.vue'),
+          },
         {
           path: 'create-schedule',
           name: 'create-schedule',

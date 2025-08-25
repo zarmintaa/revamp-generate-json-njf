@@ -23,6 +23,12 @@ export const sideBarItem = [
         to: '/generate-trx-fast',
         external: false,
       },
+      {
+        type: 'link',
+        title: 'RC-SCHD',
+        to: '/generate-rc-schd',
+        external: false,
+      },
     ],
   },
   { type: 'caption', title: 'Data' },

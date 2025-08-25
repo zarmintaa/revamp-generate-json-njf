@@ -18,7 +18,7 @@ export function useJsonTemplate() {
       dataTrx = fileData.value
     }
 
-    if (jsonName == 'MASTER' || jsonName == 'SCHD') {
+    if (jsonName === 'MASTER' || jsonName === 'SCHD' || jsonName === 'RC_SCHD') {
       templateJson = {
         data: [
           {
@@ -32,7 +32,7 @@ export function useJsonTemplate() {
       }
     }
 
-    if (jsonName == 'TRX-FAST') {
+    if (jsonName === 'TRX-FAST') {
       let totalRow = 0
       let totalAmount = 0
       if (dataTrx.data) {
@@ -55,7 +55,7 @@ export function useJsonTemplate() {
         jumlahRow: totalRow,
         jumlahAmount: totalAmount,
         useNik: nik,
-        data: dataTrx.data,
+        data: dataTrx.data || [],
       }
     }
 
