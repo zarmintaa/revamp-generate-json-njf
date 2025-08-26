@@ -33,7 +33,8 @@ const router = createRouter({
           path: 'generate-re-schd',
           name: 'generate-re-schd',
           component: () => import('@/views/generate/GenerateReSchd.vue'),
-        },{
+        },
+        {
           path: 'generate-cancel-ppd',
           name: 'generate-cancel-ppd',
           component: () => import('@/views/generate/GenerateCancelPpd.vue'),
@@ -46,6 +47,11 @@ const router = createRouter({
         {
           path: 'create-master-ppd',
           name: 'create-master-ppd',
+          component: () => import('@/views/data/generateDataMaster.vue'),
+        },
+        {
+          path: 'create-transaction',
+          name: "'create-transaction",
           component: () => import('@/views/data/generateDataMaster.vue'),
         },
         {

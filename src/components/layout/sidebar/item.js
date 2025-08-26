@@ -34,7 +34,8 @@ export const sideBarItem = [
         title: 'RC-SCHD',
         to: '/generate-rc-schd',
         external: false,
-      },{
+      },
+      {
         type: 'link',
         title: 'CANCEL_PPD',
         to: '/generate-cancel-ppd',
@@ -58,6 +59,12 @@ export const sideBarItem = [
         type: 'link',
         title: 'SCHEDULE',
         to: '/create-schedule',
+        external: false,
+      },
+      {
+        type: 'link',
+        title: 'TRANSACTION',
+        to: '/create-transaction',
         external: false,
       },
       // {
