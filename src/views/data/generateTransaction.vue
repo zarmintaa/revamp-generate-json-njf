@@ -250,6 +250,12 @@ const generateTransactions = () => {
 
     uploadedContracts.value.forEach((contract) => {
       transforms.forEach((transform) => {
+        let transactionAmount = contract.amount || 1000000
+
+        if (transform.amountType.trim() === 'BUNGA') {
+          transactionAmount = transactionAmount * 0.2
+        }
+
         data.push(
           getFormatTransaction(
             transform.aitCode,
@@ -259,7 +265,7 @@ const generateTransactions = () => {
             formatDate(dateTransaction.value),
             '000',
             contract.instalment || instalment.value,
-            contract.amount || 1000000,
+            transactionAmount,
           ),
         )
       })
