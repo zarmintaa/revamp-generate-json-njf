@@ -69,7 +69,7 @@ const router = createRouter({
         {
           path: 'create-transaction',
           name: 'create-transaction',
-          component: () => import('@/views/data/generateDataMaster.vue'),
+          component: () => import('@/views/data/generateTransaction.vue'),
           meta: {
             title: 'Generate Transaction',
           },

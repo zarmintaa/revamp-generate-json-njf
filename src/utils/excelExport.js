@@ -272,9 +272,9 @@ export function formatDataForExport(rawData, fieldMapping = {}, excludeFields = 
         value = value.toLocaleDateString('id-ID')
       }
       // Format numbers
-      else if (typeof value === 'number' && value > 1000) {
-        value = value.toLocaleString('id-ID')
-      }
+      // else if (typeof value === 'number' && value > 1000) {
+      //   value = value.toLocaleString('id-ID')
+      // }
       // Handle null/undefined
       else if (value === null || value === undefined) {
         value = ''
