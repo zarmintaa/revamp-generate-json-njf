@@ -32,7 +32,7 @@ export async function exportToExcel(data, filename = 'export', sheetName = 'Shee
 
     // Set header columns
     worksheet.columns = headers.map((header) => ({
-      header: options.headerMapping?.[header] || header.toUpperCase().replace(/_/g, ' '),
+      header: options.headerMapping?.[header] || header.toUpperCase(), //.replace(/_/g, ' '),
       key: header,
       width: options.columnWidth || 15,
     }))

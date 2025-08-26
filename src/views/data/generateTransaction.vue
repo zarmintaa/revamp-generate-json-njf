@@ -1,5 +1,6 @@
 <script setup>
 import { useFileUpload } from '@/composables/useFileUpload'
+import { useToast } from '@/composables/useToast'
 import { formatReadableDate } from '@/utils/dayjs'
 import { Utils } from '@/utils/doc-utils'
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport'
@@ -108,12 +109,15 @@ const instalment = ref(1)
 const transactions = ref([])
 const uploadedContracts = ref([])
 const isGenerating = ref(false)
+const toast = useToast()
+const docNoApp = ref(Utils.generateDocNoApp('A'))
 
 const getAllParameter = (id) => {
   const aitParam = aitParameterRef.value.find((param) => param.id === id)
 
   if (!aitParam) {
     console.warn(`AIT Parameter dengan ID ${id} tidak ditemukan`)
+    toast.error('Error', `AIT Parameter dengan ID ${id} tidak ditemukan`)
     return null
   }
 
@@ -122,6 +126,7 @@ const getAllParameter = (id) => {
   )
 
   if (!transformData || transformData.length === 0) {
+    toast.error('Error', `AIT Code dengan code ${aitParam.aitCode} tidak ditemukan`)
     console.warn(`AIT Code dengan code ${aitParam.aitCode} tidak ditemukan`)
     return null
   }
@@ -225,6 +230,7 @@ const normalizeContractData = (rawData) => {
 const generateTransactions = () => {
   if (!uploadedContracts.value.length) {
     console.warn('No contracts available for transaction generation')
+    toast.error('Error', 'No contracts available for transaction generation')
     return
   }
 
@@ -234,12 +240,13 @@ const generateTransactions = () => {
     const paramData = getAllParameter(aitParam.value)
     if (!paramData) {
       console.error('Invalid AIT parameter')
+      toast.error('Error', 'Invalid AIT parameter')
       return
     }
 
     const { transforms } = paramData
     let data = []
-    const docNoApp = Utils.generateDocNoApp('A')
+    docNoApp.value = ref(Utils.generateDocNoApp('A'))
 
     uploadedContracts.value.forEach((contract) => {
       transforms.forEach((transform) => {
@@ -248,7 +255,7 @@ const generateTransactions = () => {
             transform.aitCode,
             transform.lineGt,
             getContractNumber(contract), // Menggunakan fungsi helper yang aman
-            docNoApp,
+            docNoApp.value,
             formatDate(dateTransaction.value),
             '000',
             contract.instalment || instalment.value,
@@ -259,7 +266,7 @@ const generateTransactions = () => {
     })
 
     transactions.value = data
-    console.log('Generated transactions:', data)
+    // console.log('Generated transactions:', data)
   } finally {
     isGenerating.value = false
   }
@@ -296,17 +303,25 @@ const selectedParameter = computed(() => {
   return aitParameterRef.value.find((param) => param.id === aitParam.value)
 })
 
+function generateUniqueIdWithDate() {
+  const timestamp = Date.now().toString(36)
+  const randomString = Math.random().toString(36).substring(2, 8)
+  return `${timestamp}-${randomString}`
+}
+
 const exportToExcelHandler = async () => {
   if (!transactions.value.length) {
     alert('No transactions to export')
+    toast.warning('Warning', 'No transactions to export')
     return
   }
 
   // Here you would implement Excel export functionality
 
-  const fileName = `transaction_${dateTransaction.value}.xlsx`
+  const fileName = `transaction_${dateTransaction.value}-${generateUniqueIdWithDate()}.xlsx`
 
-  console.log(transactions.value)
+  // console.log(transactions.value)
+
   const data = await exportToExcel(formatDataForExport(transactions.value), fileName)
   downloadExcelFile(data.buffer, fileName)
 }

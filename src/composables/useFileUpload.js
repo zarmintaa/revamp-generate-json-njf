@@ -134,7 +134,7 @@ export function useFileUpload() {
       }
 
       fileData.value = data
-      toast.info('File Processing', 'File success')
+      toast.success('File Processing', 'Success for processing file', 3000)
     } catch (error) {
       console.error('Error processing file:', error)
       toast.error('Error processing file', error.message || 'Failed to process file')
