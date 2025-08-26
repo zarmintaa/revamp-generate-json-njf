@@ -418,12 +418,11 @@ const exportToExcelHandler = async () => {
                 <div class="col-12">
                   <div class="border rounded p-3 bg-light">
                     <h6 class="fw-semibold mb-3">
-                      <i class="fas fa-upload me-2"></i>
+                      <i class="fas fa-upload"></i>
                       Upload Contract Data
                     </h6>
 
                     <div class="mb-3">
-                      <label class="form-label fw-medium">Upload Excel/JSON File</label>
                       <div class="input-group">
                         <input
                           :accept="fileType === 'JSON' ? '.json' : '.xlsx, .xls, .xlsm'"
@@ -623,7 +622,7 @@ const exportToExcelHandler = async () => {
             </div>
             <h5 class="text-muted mb-3">No Data Available</h5>
             <p class="text-muted mb-4">
-              Please upload an Excel or JSON file containing contract data to generate transactions.
+              Please upload an Excel file containing contract data to generate transactions.
             </p>
             <div class="text-muted">
               <small>
