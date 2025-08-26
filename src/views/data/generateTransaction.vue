@@ -326,13 +326,7 @@ const exportToExcelHandler = async () => {
     toast.warning('Warning', 'No transactions to export')
     return
   }
-
-  // Here you would implement Excel export functionality
-
   const fileName = `transaction_${dateTransaction.value}-${generateUniqueIdWithDate()}.xlsx`
-
-  // console.log(transactions.value)
-
   const data = await exportToExcel(formatDataForExport(transactions.value), fileName)
   downloadExcelFile(data.buffer, fileName)
 }
@@ -342,8 +336,6 @@ const exportToExcelHandler = async () => {
   <section>
     <div class="row">
       <div class="col-12">
-        <!-- Header Card -->
-
         <!-- Form Card -->
         <div class="card shadow-sm mb-4">
           <div class="card-header">
