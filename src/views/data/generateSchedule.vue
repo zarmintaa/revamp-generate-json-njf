@@ -75,7 +75,6 @@ const annuitySchedule = computed(() => {
     let principalPayment, actualMonthlyPayment
 
     if (month === numPayments.value) {
-      // Logika untuk angsuran terakhir sudah BENAR, pertahankan.
       principalPayment = remainingBalance
       actualMonthlyPayment = interestPayment + principalPayment
       remainingBalance = 0

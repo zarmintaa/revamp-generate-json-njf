@@ -169,7 +169,6 @@ function formatDate(dateString) {
   return year + month + day
 }
 
-// Fungsi untuk normalisasi header Excel (handle UPPERCASE)
 const normalizeHeaders = (headers) => {
   const headerMap = {
     CONT_NO: 'cont_no',
@@ -187,7 +186,6 @@ const normalizeHeaders = (headers) => {
 }
 
 const getContractNumber = (contract) => {
-  // Fungsi untuk safely get contract number dari berbagai kemungkinan field names
   const possibleFields = [
     'cont_no',
     'contract_number',
@@ -205,11 +203,9 @@ const getContractNumber = (contract) => {
     }
   }
 
-  // Fallback jika tidak ada field yang valid
   return 'unknown_contract'
 }
 
-// Atau alternatif yang lebih compact:
 const getContractNumberCompact = (contract) => {
   return (
     contract.cont_no?.toLowerCase() ||
@@ -221,7 +217,6 @@ const getContractNumberCompact = (contract) => {
   )
 }
 
-// Fungsi untuk mengubah data dengan header yang sudah dinormalisasi
 const normalizeContractData = (rawData) => {
   if (!rawData || !rawData.length) return []
 
@@ -270,7 +265,7 @@ const generateTransactions = () => {
           getFormatTransaction(
             transform.aitCode,
             transform.lineGt,
-            getContractNumber(contract), // Menggunakan fungsi helper yang aman
+            getContractNumber(contract),
             docNoApp.value,
             formatDate(dateTransaction.value),
             '000',
@@ -569,7 +564,7 @@ const exportToExcelHandler = async () => {
               <table class="table table-striped table-hover mb-0">
                 <thead class="sticky-top">
                   <tr>
-                    <th scope="col">#</th>
+                    <th scope="col">No</th>
                     <th scope="col">AIT Code</th>
                     <th scope="col">Line GT</th>
                     <th scope="col">Doc No App</th>
