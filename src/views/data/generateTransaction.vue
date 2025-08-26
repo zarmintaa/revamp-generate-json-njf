@@ -2,7 +2,7 @@
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const title = route.meta?.title || 'Generate Master PPD'
+const title = route.meta?.title || 'Generate Transaction'
 </script>
 
 <template>

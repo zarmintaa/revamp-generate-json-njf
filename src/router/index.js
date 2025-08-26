@@ -13,21 +13,31 @@ const router = createRouter({
           path: 'generate-master',
           name: 'generate-master',
           component: () => import('@/views/generate/GenerateMaster.vue'),
+          meta: { title: 'Generate Master' },
         },
         {
           path: 'generate-schd',
           name: 'generate-schd',
           component: () => import('@/views/generate/GenerateSchd.vue'),
+          meta: {
+            title: 'Generate SCHD',
+          },
         },
         {
           path: 'generate-trx-fast',
           name: 'generate-trx-fast',
           component: () => import('@/views/generate/GenerateTrxFast.vue'),
+          meta: {
+            title: 'Generate TRX-FAST',
+          },
         },
         {
           path: 'generate-rc-schd',
           name: 'generate-rc-schd',
           component: () => import('@/views/generate/GenerateRcSchd.vue'),
+          meta: {
+            title: 'Generate RC-SCHD',
+          },
         },
         {
           path: 'generate-re-schd',
@@ -38,21 +48,31 @@ const router = createRouter({
           path: 'generate-cancel-ppd',
           name: 'generate-cancel-ppd',
           component: () => import('@/views/generate/GenerateCancelPpd.vue'),
+          meta: {
+            title: 'Generate Cancel PPD',
+          },
         },
         {
           path: 'create-schedule',
           name: 'create-schedule',
           component: () => import('@/views/data/generateSchedule.vue'),
+          meta: { title: 'Generate Schedule' },
         },
         {
           path: 'create-master-ppd',
           name: 'create-master-ppd',
           component: () => import('@/views/data/generateDataMaster.vue'),
+          meta: {
+            title: 'Generate Data Master',
+          },
         },
         {
           path: 'create-transaction',
-          name: "'create-transaction",
+          name: 'create-transaction',
           component: () => import('@/views/data/generateDataMaster.vue'),
+          meta: {
+            title: 'Generate Transaction',
+          },
         },
         {
           path: 'dashboard',
