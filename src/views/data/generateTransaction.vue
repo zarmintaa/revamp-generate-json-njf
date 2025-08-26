@@ -179,6 +179,8 @@ const normalizeHeaders = (headers) => {
     AREC_CONT_NO: 'arec_cont_no',
     INSTALMENT: 'instalment',
     AMOUNT: 'amount',
+    AIT_AMOUNT1: 'ait_amount1',
+    AIT_ASSIGNTMENT: 'ait_assigntment',
   }
 
   return headers.map((header) => headerMap[header.toUpperCase()] || header.toLowerCase())
@@ -186,10 +188,18 @@ const normalizeHeaders = (headers) => {
 
 const getContractNumber = (contract) => {
   // Fungsi untuk safely get contract number dari berbagai kemungkinan field names
-  const possibleFields = ['cont_no', 'contract_number', 'contract', 'fund_cont_no', 'arec_cont_no']
+  const possibleFields = [
+    'cont_no',
+    'contract_number',
+    'contract',
+    'fund_cont_no',
+    'arec_cont_no',
+    'ait_assigntment',
+  ]
 
   for (const field of possibleFields) {
     const value = contract[field]
+
     if (value && typeof value === 'string') {
       return value.toLowerCase()
     }
