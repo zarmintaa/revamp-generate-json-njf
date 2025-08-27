@@ -4,8 +4,11 @@ import { useToast } from '@/composables/useToast'
 import { formatReadableDate } from '@/utils/dayjs'
 import { Utils } from '@/utils/doc-utils'
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import Properties from "@/components/common/generator/properties/Properties.vue";
+import PropertiesItem from "@/components/common/generator/properties/PropertiesItem.vue";
+import { debounce } from '@/utils/debounce.js'
 
 const route = useRoute()
 const title = route.meta?.title || 'Generate Transaction'
@@ -201,6 +204,8 @@ const uploadedContracts = ref([])
 const isGenerating = ref(false)
 const toast = useToast()
 const docNoApp = ref(Utils.generateDocNoApp('A'))
+const amountPokok = ref(1000000)
+const amountBunga = ref(200000)
 
 const getAllParameter = (id) => {
   const aitParam = aitParameterRef.value.find((param) => param.id === id)
@@ -228,6 +233,10 @@ const getAllParameter = (id) => {
     transformCount: transformData.length,
   }
 }
+
+const showParameter = computed(() => {
+  return getAllParameter(aitParam.value);
+})
 
 const getFormatTransaction = (
   aitCode,
@@ -296,17 +305,6 @@ const getContractNumber = (contract) => {
   return 'unknown_contract'
 }
 
-const getContractNumberCompact = (contract) => {
-  return (
-    contract.cont_no?.toLowerCase() ||
-    contract.contract_number?.toLowerCase() ||
-    contract.contract?.toLowerCase() ||
-    contract.fund_cont_no?.toLowerCase() ||
-    contract.arec_cont_no?.toLowerCase() ||
-    'unknown_contract'
-  )
-}
-
 const normalizeContractData = (rawData) => {
   if (!rawData || !rawData.length) return []
 
@@ -322,6 +320,7 @@ const normalizeContractData = (rawData) => {
   })
 }
 
+// Create debounced version of generateTransactions function
 const generateTransactions = () => {
   if (!uploadedContracts.value.length) {
     console.warn('No contracts available for transaction generation')
@@ -345,10 +344,11 @@ const generateTransactions = () => {
 
     uploadedContracts.value.forEach((contract) => {
       transforms.forEach((transform) => {
-        let transactionAmount = contract.amount || 1000000
+        let transactionAmount = contract.amount || amountPokok.value || 1000000
+        let transactionAmountBunga = amountBunga.value || transactionAmount * 0.2
 
         if (transform.amountType.trim() === 'BUNGA') {
-          transactionAmount = transactionAmount * 0.2
+          transactionAmount = transactionAmountBunga
         }
 
         data.push(
@@ -373,28 +373,54 @@ const generateTransactions = () => {
   }
 }
 
-const handleProcessFile = async () => {
-  await processFile()
-}
+// Create debounced version of generateTransactions with 500ms delay
+const debouncedGenerateTransactions = debounce(generateTransactions, 500)
 
-// Watch for file data changes
+// Debounce for handling file processing to prevent multiple rapid calls
+const handleProcessFile = debounce(async () => {
+  await processFile()
+}, 300)
+
+// Debounce for contract data normalization
+const debouncedNormalizeContractData = debounce((rawData) => {
+  uploadedContracts.value = normalizeContractData(rawData)
+
+  // Generate transactions after contract data is normalized
+  if (uploadedContracts.value.length > 0) {
+    nextTick(() => {
+      debouncedGenerateTransactions()
+    })
+  }
+}, 300)
+
+// Watch for file data changes with debouncing
 watch(
   fileData,
   (newFileData) => {
     if (newFileData && newFileData.data) {
-      uploadedContracts.value = normalizeContractData(newFileData.data)
-      // console.log('Uploaded contracts:', newFileData.data)
+      debouncedNormalizeContractData(newFileData.data)
     }
   },
   { deep: true },
 )
 
-// Watch for parameter changes to regenerate transactions
+// Watch for parameter changes with debouncing
 watch(
-  [aitParam, dateTransaction, instalment, uploadedContracts],
+  [aitParam, dateTransaction, instalment, amountPokok, amountBunga],
   () => {
     if (uploadedContracts.value.length > 0) {
-      generateTransactions()
+      debouncedGenerateTransactions()
+    }
+  },
+  { deep: true },
+)
+
+// Watch for uploaded contracts changes with debouncing
+watch(
+  uploadedContracts,
+  () => {
+    if (uploadedContracts.value.length > 0) {
+      debouncedGenerateTransactions()
     }
   },
   { deep: true },
@@ -410,7 +436,8 @@ function generateUniqueIdWithDate() {
   return `${timestamp}-${randomString}`
 }
 
-const exportToExcelHandler = async () => {
+// Debounce export function to prevent multiple rapid exports
+const exportToExcelHandler = debounce(async () => {
   if (!transactions.value.length) {
     alert('No transactions to export')
     toast.warning('Warning', 'No transactions to export')
@@ -419,7 +446,29 @@ const exportToExcelHandler = async () => {
   const fileName = `transaction_${dateTransaction.value}-${generateUniqueIdWithDate()}.xlsx`
   const data = await exportToExcel(formatDataForExport(transactions.value), fileName)
   downloadExcelFile(data.buffer, fileName)
-}
+}, 500)
+
+// Debounced input handlers for form fields
+const handleAitParamChange = debounce((value) => {
+  aitParam.value = value
+}, 200)
+
+const handleDateChange = debounce((value) => {
+  dateTransaction.value = value
+}, 200)
+
+const handleInstalmentChange = debounce((value) => {
+  instalment.value = value
+}, 200)
+
+const handleAmountPokokChange = debounce((value) => {
+  amountPokok.value = value
+}, 300)
+
+const handleAmountBungaChange = debounce((value) => {
+  amountBunga.value = value
+}, 300)
+
 </script>
 
 <template>
@@ -446,7 +495,8 @@ const exportToExcelHandler = async () => {
                   <select
                     id="event-select"
                     name="event"
-                    v-model="aitParam"
+                    :value="aitParam"
+                    @change="handleAitParamChange($event.target.value)"
                     class="form-select"
                     required
                   >
@@ -473,7 +523,8 @@ const exportToExcelHandler = async () => {
                     type="date"
                     id="date-transaction"
                     name="date-transaction"
-                    v-model="dateTransaction"
+                    :value="dateTransaction"
+                    @input="handleDateChange($event.target.value)"
                     class="form-control"
                     required
                   />
@@ -489,7 +540,8 @@ const exportToExcelHandler = async () => {
                     type="number"
                     id="instalment-input"
                     name="instalment"
-                    v-model="instalment"
+                    :value="instalment"
+                    @input="handleInstalmentChange(parseInt($event.target.value))"
                     class="form-control"
                     min="1"
                     required
@@ -498,17 +550,108 @@ const exportToExcelHandler = async () => {
                     <small class="text-muted">Will be overridden by file data if available</small>
                   </div>
                 </div>
+
+                <!-- Amount Pokok -->
+                <div class="col-md-4 mb-3">
+                  <label for="amount-pokok-input" class="form-label fw-semibold">
+                    <i class="fas fa-money-bill me-1"></i>
+                    Default Amount Pokok
+                  </label>
+                  <input
+                    type="number"
+                    id="amount-pokok-input"
+                    name="amount-pokok"
+                    :value="amountPokok"
+                    @input="handleAmountPokokChange(parseInt($event.target.value))"
+                    class="form-control"
+                    min="1"
+                    required
+                  />
+                  <div class="form-text">
+                    <small class="text-muted">Will be overridden by file data if available</small>
+                  </div>
+                </div>
+
+                <!-- Amount Bunga -->
+                <div class="col-md-4 mb-3">
+                  <label for="amount-bunga-input" class="form-label fw-semibold">
+                    <i class="fas fa-percentage me-1"></i>
+                    Default Amount Bunga
+                  </label>
+                  <input
+                    type="number"
+                    id="amount-bunga-input"
+                    name="amount-bunga"
+                    :value="amountBunga"
+                    @input="handleAmountBungaChange(parseInt($event.target.value))"
+                    class="form-control"
+                    min="1"
+                    required
+                  />
+                  <div class="form-text">
+                    <small class="text-muted">Will be overridden by file data if available</small>
+                  </div>
+                </div>
+
               </div>
+            </form>
+          </div>
+        </div>
 
-              <!-- File Upload Section -->
-              <div class="row">
-                <div class="col-12">
-                  <div class="border rounded p-3 bg-light">
-                    <h6 class="fw-semibold mb-3">
-                      <i class="fas fa-upload"></i>
-                      Upload Contract Data
-                    </h6>
+        <div class="card">
+          <div class="card-body">
+            <Properties title="AIT Configuration">
+              <PropertiesItem input-label="Event" :input-properties="showParameter.event"   />
+              <PropertiesItem input-label="AIT CODE" :input-properties="showParameter.aitCode"   />
+              <PropertiesItem input-label="Description" :input-properties="showParameter.description"   />
+            </Properties>
 
+            <div v-if="showParameter" class="card shadow-sm">
+              <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 500px">
+                  <table class="table table-hover mb-0">
+                    <thead class="sticky-top">
+                    <tr>
+                      <th scope="col">No</th>
+                      <th scope="col">AIT Code</th>
+                      <th scope="col">Line GT</th>
+                      <th scope="col">Amount Type</th>
+                      <th scope="col">Is Optional</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="(ait, index) in showParameter.transforms" :key="index">
+                      <td class="fw-medium">{{ index + 1 }}</td>
+                      <td>
+                        <span class="fw-medium">{{ ait.aitCode }}</span>
+                      </td>
+                      <td>{{ ait.lineGt }}</td>
+                      <td>
+                        <span class="fw-medium">{{ ait.amountType }}</span>
+                      </td>
+                      <td>{{ ait.isOptional === true ? 'YES' : 'NO' }}</td>
+                    </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <!-- File Upload Section -->
+          <div class="card-header">
+            <h6 class="fw-semibold">
+              <i class="fas fa-upload"></i>
+              Upload Contract Data
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-12">
+                <div class="border rounded p-3 bg-light">
+                  <form @submit.prevent>
                     <div class="mb-3">
                       <div class="input-group">
                         <input
@@ -521,7 +664,7 @@ const exportToExcelHandler = async () => {
                         <button
                           :disabled="isFileNotReady || isProses"
                           class="btn btn-outline-primary"
-                          type="button"
+                          type="submit"
                           @click="handleProcessFile"
                         >
                           <span v-if="isProses" class="d-flex align-items-center">
@@ -543,94 +686,28 @@ const exportToExcelHandler = async () => {
                         Selected: <strong>{{ fileName }}</strong>
                       </div>
                     </div>
+                  </form>
 
-                    <div v-if="errorMessage" class="alert alert-danger">
-                      <i class="fas fa-exclamation-triangle me-2"></i>
-                      {{ errorMessage }}
-                    </div>
+                  <div v-if="errorMessage" class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    {{ errorMessage }}
+                  </div>
 
-                    <div v-if="fileData" class="alert alert-success">
-                      <i class="fas fa-check-circle me-2"></i>
-                      File processed successfully!
-                      <strong>{{ fileData.data.length }}</strong> records loaded.
-                    </div>
+                  <div v-if="fileData" class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    File processed successfully!
+                    <strong>{{ fileData.data.length }}</strong> records loaded.
                   </div>
                 </div>
               </div>
-
-              <!-- Action Buttons -->
-              <!-- <div class="row mt-4">
-                <div class="col-12">
-                  <div class="d-flex gap-2">
-                    <button
-                      type="button"
-                      :disabled="!uploadedContracts.length || isGenerating"
-                      class="btn btn-primary"
-                      @click="generateTransactions"
-                    >
-                      <span v-if="isGenerating">
-                        <span class="spinner-border spinner-border-sm me-2"></span>
-                        Generating...
-                      </span>
-                      <span v-else>
-                        <i class="fas fa-cogs me-1"></i>
-                        Generate Transactions
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      :disabled="!transactions.length"
-                      class="btn btn-success"
-                      @click="exportToExcelHandler"
-                    >
-                      <i class="fas fa-download me-1"></i>
-                      Export to Excel
-                    </button>
-                  </div>
-                </div>
-              </div> -->
-            </form>
-          </div>
-        </div>
-
-        <!-- Results Table
-        <div v-if="uploadedContracts.length > 0" class="card shadow-sm mb-4">
-          <div class="card-header">
-            <h5 class="card-title mb-0">
-              <i class="fas fa-table me-2"></i>
-              Uploaded Contract Data
-              <span class="badge bg-primary text-light ms-2"
-                >{{ uploadedContracts.length }} records</span
-              >
-            </h5>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive" style="max-height: 300px">
-              <table class="table table-striped table-hover mb-0">
-                <thead class="sticky-top">
-                  <tr>
-                    <th scope="col">#</th>
-                    <th scope="col" v-for="(header, index) in fileData?.headers || []" :key="index">
-                      {{ header }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(contract, index) in uploadedContracts" :key="index">
-                    <td class="fw-medium">{{ index + 1 }}</td>
-                    <td v-for="(header, headerIndex) in fileData?.headers || []" :key="headerIndex">
-                      <span v-if="contract[header] !== null && contract[header] !== undefined">
-                        {{ contract[header] }}
-                      </span>
-                      <span v-else class="text-muted fst-italic">-</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
           </div>
-        </div> -->
+
+        </div>
+
+
+
+
 
         <!-- Generated Transactions Table -->
         <div v-if="transactions.length > 0" class="card shadow-sm">
@@ -645,38 +722,38 @@ const exportToExcelHandler = async () => {
             <div class="table-responsive" style="max-height: 500px">
               <table class="table table-striped table-hover mb-0">
                 <thead class="sticky-top">
-                  <tr>
-                    <th scope="col">No</th>
-                    <th scope="col">AIT Code</th>
-                    <th scope="col">Line GT</th>
-                    <th scope="col">Doc No App</th>
-                    <th scope="col">Posting Date</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col">Cost Center</th>
-                    <th scope="col">Assignment</th>
-                    <th scope="col">Ref Key L1</th>
-                  </tr>
+                <tr>
+                  <th scope="col">No</th>
+                  <th scope="col">AIT Code</th>
+                  <th scope="col">Line GT</th>
+                  <th scope="col">Doc No App</th>
+                  <th scope="col">Posting Date</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Cost Center</th>
+                  <th scope="col">Assignment</th>
+                  <th scope="col">Ref Key L1</th>
+                </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(transaction, index) in transactions" :key="index">
-                    <td class="fw-medium">{{ index + 1 }}</td>
-                    <td>
-                      <span class="fw-medium">{{ transaction.AIT_CODE }}</span>
-                    </td>
-                    <td>{{ transaction.AIT_LINE_GT }}</td>
-                    <td>
-                      <span class="fw-medium">{{ transaction.AIT_DOC_NO_APP }}</span>
-                    </td>
-                    <td>{{ transaction.AIT_POSTING_DATE }}</td>
-                    <td class="fw-medium">
-                      <strong>{{ Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID') }}</strong>
-                    </td>
-                    <td>{{ transaction.AIT_COST_CENTER }}</td>
-                    <td>
-                      <code class="fw-medium text-dark">{{ transaction.AIT_ASSIGNTMENT }}</code>
-                    </td>
-                    <td>{{ transaction.AIT_REF_KEY_L1 }}</td>
-                  </tr>
+                <tr v-for="(transaction, index) in transactions" :key="index">
+                  <td class="fw-medium">{{ index + 1 }}</td>
+                  <td>
+                    <span class="fw-medium">{{ transaction.AIT_CODE }}</span>
+                  </td>
+                  <td>{{ transaction.AIT_LINE_GT }}</td>
+                  <td>
+                    <span class="fw-medium">{{ transaction.AIT_DOC_NO_APP }}</span>
+                  </td>
+                  <td>{{ transaction.AIT_POSTING_DATE }}</td>
+                  <td class="fw-medium">
+                    <strong>{{ Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID') }}</strong>
+                  </td>
+                  <td>{{ transaction.AIT_COST_CENTER }}</td>
+                  <td>
+                    <code class="fw-medium text-dark">{{ transaction.AIT_ASSIGNTMENT }}</code>
+                  </td>
+                  <td>{{ transaction.AIT_REF_KEY_L1 }}</td>
+                </tr>
                 </tbody>
               </table>
             </div>
@@ -688,7 +765,7 @@ const exportToExcelHandler = async () => {
                 Showing {{ transactions.length }} generated transactions
               </small>
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" @click="generateTransactions">
+                <button class="btn btn-outline-secondary" @click="debouncedGenerateTransactions">
                   <i class="fas fa-sync-alt me-1"></i>
                   Refresh
                 </button>

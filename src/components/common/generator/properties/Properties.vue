@@ -1,9 +1,14 @@
-<script setup></script>
+<script setup>
+const { title } = defineProps({
+  title: String,
+})
+
+</script>
 
 <template>
   <div class="card">
     <div class="card-header">
-      <div>Setting Properties</div>
+      <div>{{title ?? "Setting Properties"}}</div>
     </div>
     <div class="card-body">
       <slot />
