@@ -690,7 +690,7 @@ const handleAmountBungaChange = debounce((value) => {
           <div class="card-body">
             <div class="row">
               <div class="col-12">
-                <div class="border rounded p-3 bg-light">
+                <div class="">
                   <form @submit.prevent>
                     <div class="mb-3">
                       <div class="input-group">
