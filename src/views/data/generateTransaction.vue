@@ -455,19 +455,19 @@ const handleAitParamChange = debounce((value) => {
 
 const handleDateChange = debounce((value) => {
   dateTransaction.value = value
-}, 200)
+}, 500)
 
 const handleInstalmentChange = debounce((value) => {
   instalment.value = value
-}, 200)
+}, 500)
 
 const handleAmountPokokChange = debounce((value) => {
   amountPokok.value = value
-}, 300)
+}, 500)
 
 const handleAmountBungaChange = debounce((value) => {
   amountBunga.value = value
-}, 300)
+}, 500)
 
 </script>
 
