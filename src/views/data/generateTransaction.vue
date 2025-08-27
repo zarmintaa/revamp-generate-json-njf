@@ -684,7 +684,6 @@ const handleAmountBungaChange = debounce((value) => {
           <!-- File Upload Section -->
           <div class="card-header">
             <h6 class="fw-semibold">
-              <i class="fas fa-upload"></i>
               Upload Contract Data
             </h6>
           </div>
