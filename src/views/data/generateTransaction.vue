@@ -6,8 +6,8 @@ import { Utils } from '@/utils/doc-utils'
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport'
 import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import Properties from "@/components/common/generator/properties/Properties.vue";
-import PropertiesItem from "@/components/common/generator/properties/PropertiesItem.vue";
+import Properties from '@/components/common/generator/properties/Properties.vue'
+import PropertiesItem from '@/components/common/generator/properties/PropertiesItem.vue'
 import { debounce } from '@/utils/debounce.js'
 
 const route = useRoute()
@@ -191,6 +191,36 @@ const aitParameterTransform = [
     amountType: 'BUNGA',
     isOptional: false,
   },
+  {
+    aitCode: 'F0030002',
+    lineGt: 10,
+    amountType: 'DENDA',
+    isOptional: true,
+  },
+  {
+    aitCode: 'F0030002',
+    lineGt: 1,
+    amountType: 'SOLD',
+    isOptional: true,
+  },
+  {
+    aitCode: 'F0030002',
+    lineGt: 2,
+    amountType: 'SOLD',
+    isOptional: true,
+  },
+  {
+    aitCode: 'F0030002',
+    lineGt: 17,
+    amountType: 'EXPENSE',
+    isOptional: true,
+  },
+  {
+    aitCode: 'F0030002',
+    lineGt: 18,
+    amountType: 'EXPENSE',
+    isOptional: true,
+  },
 ]
 
 const aitParameterRef = ref(aitParameter)
@@ -235,7 +265,7 @@ const getAllParameter = (id) => {
 }
 
 const showParameter = computed(() => {
-  return getAllParameter(aitParam.value);
+  return getAllParameter(aitParam.value)
 })
 
 const getFormatTransaction = (
@@ -344,15 +374,20 @@ const generateTransactions = () => {
 
     uploadedContracts.value.forEach((contract) => {
       transforms.forEach((transform) => {
-        let transactionAmount = contract.amount || amountPokok.value || 1000000
-        let transactionAmountBunga = amountBunga.value || transactionAmount * 0.2
+        // console.log({ transform })
+        let transactionAmount = null
+        let dataTransform = null
+        if (!transform.isOptional) {
+          if (!transform.isOptional) {
+            transactionAmount = contract.amount || amountPokok.value || 1000000
+            let transactionAmountBunga = amountBunga.value || transactionAmount * 0.2
 
-        if (transform.amountType.trim() === 'BUNGA') {
-          transactionAmount = transactionAmountBunga
-        }
+            if (transform.amountType.trim() === 'BUNGA') {
+              transactionAmount = transactionAmountBunga
+            }
+          }
 
-        data.push(
-          getFormatTransaction(
+          dataTransform = getFormatTransaction(
             transform.aitCode,
             transform.lineGt,
             getContractNumber(contract),
@@ -361,8 +396,13 @@ const generateTransactions = () => {
             '000',
             contract.instalment || instalment.value,
             transactionAmount,
-          ),
-        )
+          )
+          data.push(dataTransform)
+        }
+
+        if (dataTransform === null || transactionAmount === null) {
+          toast.info('Mapping AIT', 'Data not available for transaction generation')
+        }
       })
     })
 
@@ -468,7 +508,6 @@ const handleAmountPokokChange = debounce((value) => {
 const handleAmountBungaChange = debounce((value) => {
   amountBunga.value = value
 }, 500)
-
 </script>
 
 <template>
@@ -592,7 +631,6 @@ const handleAmountBungaChange = debounce((value) => {
                     <small class="text-muted">Will be overridden by file data if available</small>
                   </div>
                 </div>
-
               </div>
             </form>
           </div>
@@ -601,9 +639,12 @@ const handleAmountBungaChange = debounce((value) => {
         <div class="card">
           <div class="card-body">
             <Properties title="AIT Configuration">
-              <PropertiesItem input-label="Event" :input-properties="showParameter.event"   />
-              <PropertiesItem input-label="AIT CODE" :input-properties="showParameter.aitCode"   />
-              <PropertiesItem input-label="Description" :input-properties="showParameter.description"   />
+              <PropertiesItem input-label="Event" :input-properties="showParameter.event" />
+              <PropertiesItem input-label="AIT CODE" :input-properties="showParameter.aitCode" />
+              <PropertiesItem
+                input-label="Description"
+                :input-properties="showParameter.description"
+              />
             </Properties>
 
             <div v-if="showParameter" class="card shadow-sm">
@@ -611,26 +652,26 @@ const handleAmountBungaChange = debounce((value) => {
                 <div class="table-responsive" style="max-height: 500px">
                   <table class="table table-hover mb-0">
                     <thead class="sticky-top">
-                    <tr>
-                      <th scope="col">No</th>
-                      <th scope="col">AIT Code</th>
-                      <th scope="col">Line GT</th>
-                      <th scope="col">Amount Type</th>
-                      <th scope="col">Is Optional</th>
-                    </tr>
+                      <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">AIT Code</th>
+                        <th scope="col">Line GT</th>
+                        <th scope="col">Amount Type</th>
+                        <th scope="col">Is Optional</th>
+                      </tr>
                     </thead>
                     <tbody>
-                    <tr v-for="(ait, index) in showParameter.transforms" :key="index">
-                      <td class="fw-medium">{{ index + 1 }}</td>
-                      <td>
-                        <span class="fw-medium">{{ ait.aitCode }}</span>
-                      </td>
-                      <td>{{ ait.lineGt }}</td>
-                      <td>
-                        <span class="fw-medium">{{ ait.amountType }}</span>
-                      </td>
-                      <td>{{ ait.isOptional === true ? 'YES' : 'NO' }}</td>
-                    </tr>
+                      <tr v-for="(ait, index) in showParameter.transforms" :key="index">
+                        <td class="fw-medium">{{ index + 1 }}</td>
+                        <td>
+                          <span class="fw-medium">{{ ait.aitCode }}</span>
+                        </td>
+                        <td>{{ ait.lineGt }}</td>
+                        <td>
+                          <span class="fw-medium">{{ ait.amountType }}</span>
+                        </td>
+                        <td>{{ ait.isOptional === true ? 'YES' : 'NO' }}</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -702,12 +743,7 @@ const handleAmountBungaChange = debounce((value) => {
               </div>
             </div>
           </div>
-
         </div>
-
-
-
-
 
         <!-- Generated Transactions Table -->
         <div v-if="transactions.length > 0" class="card shadow-sm">
@@ -722,38 +758,38 @@ const handleAmountBungaChange = debounce((value) => {
             <div class="table-responsive" style="max-height: 500px">
               <table class="table table-striped table-hover mb-0">
                 <thead class="sticky-top">
-                <tr>
-                  <th scope="col">No</th>
-                  <th scope="col">AIT Code</th>
-                  <th scope="col">Line GT</th>
-                  <th scope="col">Doc No App</th>
-                  <th scope="col">Posting Date</th>
-                  <th scope="col">Amount</th>
-                  <th scope="col">Cost Center</th>
-                  <th scope="col">Assignment</th>
-                  <th scope="col">Ref Key L1</th>
-                </tr>
+                  <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">AIT Code</th>
+                    <th scope="col">Line GT</th>
+                    <th scope="col">Doc No App</th>
+                    <th scope="col">Posting Date</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Cost Center</th>
+                    <th scope="col">Assignment</th>
+                    <th scope="col">Ref Key L1</th>
+                  </tr>
                 </thead>
                 <tbody>
-                <tr v-for="(transaction, index) in transactions" :key="index">
-                  <td class="fw-medium">{{ index + 1 }}</td>
-                  <td>
-                    <span class="fw-medium">{{ transaction.AIT_CODE }}</span>
-                  </td>
-                  <td>{{ transaction.AIT_LINE_GT }}</td>
-                  <td>
-                    <span class="fw-medium">{{ transaction.AIT_DOC_NO_APP }}</span>
-                  </td>
-                  <td>{{ transaction.AIT_POSTING_DATE }}</td>
-                  <td class="fw-medium">
-                    <strong>{{ Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID') }}</strong>
-                  </td>
-                  <td>{{ transaction.AIT_COST_CENTER }}</td>
-                  <td>
-                    <code class="fw-medium text-dark">{{ transaction.AIT_ASSIGNTMENT }}</code>
-                  </td>
-                  <td>{{ transaction.AIT_REF_KEY_L1 }}</td>
-                </tr>
+                  <tr v-for="(transaction, index) in transactions" :key="index">
+                    <td class="fw-medium">{{ index + 1 }}</td>
+                    <td>
+                      <span class="fw-medium">{{ transaction.AIT_CODE }}</span>
+                    </td>
+                    <td>{{ transaction.AIT_LINE_GT }}</td>
+                    <td>
+                      <span class="fw-medium">{{ transaction.AIT_DOC_NO_APP }}</span>
+                    </td>
+                    <td>{{ transaction.AIT_POSTING_DATE }}</td>
+                    <td class="fw-medium">
+                      <strong>{{ Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID') }}</strong>
+                    </td>
+                    <td>{{ transaction.AIT_COST_CENTER }}</td>
+                    <td>
+                      <code class="fw-medium text-dark">{{ transaction.AIT_ASSIGNTMENT }}</code>
+                    </td>
+                    <td>{{ transaction.AIT_REF_KEY_L1 }}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
