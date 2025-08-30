@@ -590,7 +590,8 @@ const handleAmountBungaChange = debounce((value) => {
             <div class="text-muted">
               <small>
                 <i class="fas fa-lightbulb me-1"></i>
-                Tip: Make sure your file contains columns like 'cont_no', 'instalment', and 'amount'
+                Tip: Make sure your file contains columns like 'cont_no', 'instalment', 'pokok',
+                'bunga', 'sold', 'expense', 'denda'
               </small>
             </div>
           </div>
