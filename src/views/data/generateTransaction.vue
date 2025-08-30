@@ -9,6 +9,8 @@ import { useRoute } from 'vue-router'
 import Properties from '@/components/common/generator/properties/Properties.vue'
 import PropertiesItem from '@/components/common/generator/properties/PropertiesItem.vue'
 import { debounce } from '@/utils/debounce.js'
+import { aitParameter, aitParameterTransform } from '@/utils/data-ait'
+import { transactionMapper } from '@/composables/useTransactionMapper'
 
 const route = useRoute()
 const title = route.meta?.title || 'Generate Transaction'
@@ -24,204 +26,6 @@ const {
   handleFileChange,
   processFile,
 } = useFileUpload()
-
-const aitParameter = [
-  {
-    id: 'A001',
-    event: 'Angsuran',
-    aitCode: 'F0000002',
-    description: 'SETTLEMENT ANGSURAN',
-  },
-  {
-    id: 'A002',
-    event: 'Angsuran',
-    aitCode: 'F0000003',
-    description: 'OVERBOOK TO AR',
-  },
-  {
-    id: 'A003',
-    event: 'Cancel Angsuran',
-    aitCode: 'F1000002',
-    description: 'REVERSAL ANGSURAN',
-  },
-  {
-    id: 'A004',
-    event: 'Cancel Angsuran',
-    aitCode: 'F1000003',
-    description: 'OVERBOOK TO TITIPAN',
-  },
-  {
-    id: 'A005',
-    event: 'Pelunasan ET',
-    aitCode: 'F0000004',
-    description: 'PRETERM',
-  },
-  {
-    id: 'A006',
-    event: 'Pelunasan IC',
-    aitCode: 'F0000005',
-    description: 'KLAIM ASURANSI',
-  },
-  {
-    id: 'A007',
-    event: 'Cancel Pelunasan ET',
-    aitCode: 'F1000004',
-    description: 'CANCEL PRETERM',
-  },
-  {
-    id: 'A008',
-    event: 'Cancel Pelunasan IC',
-    aitCode: 'F1000005',
-    description: 'CANCEL CLAIM',
-  },
-  {
-    id: 'A009',
-    event: 'Repossess Asset Sold',
-    aitCode: 'F0030002',
-    description: 'SOLD REPO',
-  },
-]
-
-const aitParameterTransform = [
-  {
-    aitCode: 'F0000002',
-    lineGt: 2,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0000002',
-    lineGt: 3,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0000003',
-    lineGt: 2,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0000003',
-    lineGt: 3,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000002',
-    lineGt: 2,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000002',
-    lineGt: 3,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000003',
-    lineGt: 2,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000003',
-    lineGt: 3,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0000004',
-    lineGt: 6,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0000004',
-    lineGt: 8,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0000005',
-    lineGt: 6,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0000005',
-    lineGt: 8,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000004',
-    lineGt: 6,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000004',
-    lineGt: 8,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000005',
-    lineGt: 6,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F1000005',
-    lineGt: 8,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0030002',
-    lineGt: 6,
-    amountType: 'POKOK',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0030002',
-    lineGt: 8,
-    amountType: 'BUNGA',
-    isOptional: false,
-  },
-  {
-    aitCode: 'F0030002',
-    lineGt: 10,
-    amountType: 'DENDA',
-    isOptional: true,
-  },
-  {
-    aitCode: 'F0030002',
-    lineGt: 1,
-    amountType: 'SOLD',
-    isOptional: true,
-  },
-  {
-    aitCode: 'F0030002',
-    lineGt: 2,
-    amountType: 'SOLD',
-    isOptional: true,
-  },
-  {
-    aitCode: 'F0030002',
-    lineGt: 17,
-    amountType: 'EXPENSE',
-    isOptional: true,
-  },
-  {
-    aitCode: 'F0030002',
-    lineGt: 18,
-    amountType: 'EXPENSE',
-    isOptional: true,
-  },
-]
 
 const aitParameterRef = ref(aitParameter)
 const aitParamaterTransformRef = ref(aitParameterTransform)
@@ -268,36 +72,6 @@ const showParameter = computed(() => {
   return getAllParameter(aitParam.value)
 })
 
-const getFormatTransaction = (
-  aitCode,
-  aitLineGt,
-  contract,
-  docNoApp = Utils.generateDocNoApp('A'),
-  postingDate = formatReadableDate(new Date().toLocaleDateString()),
-  costCenter = '000',
-  instalment = 1,
-  amount,
-) => {
-  return {
-    AIT_CODE: aitCode,
-    AIT_LINE_GT: aitLineGt,
-    AIT_DOC_NO_APP: docNoApp,
-    AIT_POSTING_DATE: postingDate,
-    AIT_AMOUNT1: amount,
-    AIT_COST_CENTER: costCenter,
-    AIT_ASSIGNTMENT: contract,
-    AIT_REF_KEY_L1: instalment,
-  }
-}
-
-function formatDate(dateString) {
-  const date = new Date(dateString)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return year + month + day
-}
-
 const normalizeHeaders = (headers) => {
   const headerMap = {
     CONT_NO: 'cont_no',
@@ -327,8 +101,8 @@ const getContractNumber = (contract) => {
   for (const field of possibleFields) {
     const value = contract[field]
 
-    if (value && typeof value === 'string') {
-      return value.toLowerCase()
+    if (value && (typeof value === 'string' || typeof value === 'number')) {
+      return value //.toLowerCase()
     }
   }
 
@@ -374,40 +148,32 @@ const generateTransactions = () => {
 
     uploadedContracts.value.forEach((contract) => {
       transforms.forEach((transform) => {
-        // console.log({ transform })
-        let transactionAmount = null
         let dataTransform = null
-        if (!transform.isOptional) {
-          if (!transform.isOptional) {
-            transactionAmount = contract.amount || amountPokok.value || 1000000
-            let transactionAmountBunga = amountBunga.value || transactionAmount * 0.2
+        dataTransform = transactionMapper(
+          contract,
+          transform,
+          getContractNumber(contract),
+          instalment.value,
+          docNoApp.value,
+          dateTransaction.value,
+          amountPokok.value,
+          amountBunga.value,
+        )
 
-            if (transform.amountType.trim() === 'BUNGA') {
-              transactionAmount = transactionAmountBunga
-            }
-          }
-
-          dataTransform = getFormatTransaction(
-            transform.aitCode,
-            transform.lineGt,
-            getContractNumber(contract),
-            docNoApp.value,
-            formatDate(dateTransaction.value),
-            '000',
-            contract.instalment || instalment.value,
-            transactionAmount,
-          )
+        if (dataTransform) {
           data.push(dataTransform)
         }
 
-        if (dataTransform === null || transactionAmount === null) {
-          toast.info('Mapping AIT', 'Data not available for transaction generation')
+        if (!transform.isOptional && dataTransform === null) {
+          toast.warning(
+            'Mapping AIT',
+            `Data aitCode ${transform.aitCode} lineGt : ${transform.lineGt} not available for transaction generation`,
+          )
         }
       })
     })
 
     transactions.value = data
-    // console.log('Generated transactions:', data)
   } finally {
     isGenerating.value = false
   }
@@ -446,7 +212,7 @@ watch(
 
 // Watch for parameter changes with debouncing
 watch(
-  [aitParam, dateTransaction, instalment, amountPokok, amountBunga],
+  [aitParam, dateTransaction, instalment, amountPokok, amountBunga, showParameter],
   () => {
     if (uploadedContracts.value.length > 0) {
       debouncedGenerateTransactions()
@@ -491,7 +257,7 @@ const exportToExcelHandler = debounce(async () => {
 // Debounced input handlers for form fields
 const handleAitParamChange = debounce((value) => {
   aitParam.value = value
-}, 200)
+}, 500)
 
 const handleDateChange = debounce((value) => {
   dateTransaction.value = value
@@ -683,9 +449,7 @@ const handleAmountBungaChange = debounce((value) => {
         <div class="card">
           <!-- File Upload Section -->
           <div class="card-header">
-            <h6 class="fw-semibold">
-              Upload Contract Data
-            </h6>
+            <h6 class="fw-semibold">Upload Contract Data</h6>
           </div>
           <div class="card-body">
             <div class="row">
