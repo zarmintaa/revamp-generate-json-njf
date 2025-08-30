@@ -1,6 +1,9 @@
+<!-- generateTransaction.vue -->
+
 <script setup>
 import { useFileUpload } from '@/composables/useFileUpload'
 import { useToast } from '@/composables/useToast'
+import { useTableData } from '@/composables/useTableData'
 import { formatReadableDate } from '@/utils/dayjs'
 import { Utils } from '@/utils/doc-utils'
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport'
@@ -8,6 +11,7 @@ import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import Properties from '@/components/common/generator/properties/Properties.vue'
 import PropertiesItem from '@/components/common/generator/properties/PropertiesItem.vue'
+import TableView from '@/components/dynamic/TableView.vue'
 import { debounce } from '@/utils/debounce.js'
 import { aitParameter, aitParameterTransform } from '@/utils/data-ait'
 import { transactionMapper } from '@/composables/useTransactionMapper'
@@ -274,6 +278,46 @@ const handleAmountPokokChange = debounce((value) => {
 const handleAmountBungaChange = debounce((value) => {
   amountBunga.value = value
 }, 500)
+
+// TableView configuration for transactions
+const transactionTransformConfig = {
+  excludeKeys: ['uuid'],
+  includeKeys: [
+    'aitCode',
+    'lineGt',
+    'docNoApp',
+    'postingDate',
+    'amount',
+    'costCenter',
+    'assignment',
+    'refKeyL1',
+  ],
+  dataTransformer: (transaction) => {
+    return {
+      uuid: `${transaction.AIT_CODE}-${transaction.AIT_LINE_GT}-${Math.random()}`, // Generate unique ID for TableView
+      aitCode: transaction.AIT_CODE,
+      lineGt: transaction.AIT_LINE_GT,
+      docNoApp: transaction.AIT_DOC_NO_APP,
+      postingDate: transaction.AIT_POSTING_DATE,
+      amount: Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID'),
+      rawAmount: transaction.AIT_AMOUNT1, // Keep raw amount for sorting
+      costCenter: transaction.AIT_COST_CENTER,
+      assignment: transaction.AIT_ASSIGNTMENT,
+      refKeyL1: transaction.AIT_REF_KEY_L1,
+    }
+  },
+}
+
+const {
+  tableItems: transactionTableItems,
+  rawKeys: transactionRawKeys,
+  headers: transactionHeaders,
+} = useTableData(transactions, transactionTransformConfig)
+
+// Event handlers for transaction table
+const handleTransactionRowClick = (row) => {
+  toast.success('Transaction Info', `AIT Code: ${row.aitCode}, Amount: ${row.amount}`, 2000)
+}
 </script>
 
 <template>
@@ -508,72 +552,62 @@ const handleAmountBungaChange = debounce((value) => {
           </div>
         </div>
 
-        <!-- Generated Transactions Table -->
+        <!-- Generated Transactions Table using TableView -->
         <div v-if="transactions.length > 0" class="card shadow-sm">
           <div class="card-header bg-success">
-            <h5 class="card-title mb-0">
-              <i class="fas fa-receipt me-2"></i>
-              Generated Transactions
-              <span class="badge bg-light text-dark ms-2">{{ transactions.length }} records</span>
-            </h5>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive" style="max-height: 500px">
-              <table class="table table-striped table-hover mb-0">
-                <thead class="sticky-top">
-                  <tr>
-                    <th scope="col">No</th>
-                    <th scope="col">AIT Code</th>
-                    <th scope="col">Line GT</th>
-                    <th scope="col">Doc No App</th>
-                    <th scope="col">Posting Date</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col">Cost Center</th>
-                    <th scope="col">Assignment</th>
-                    <th scope="col">Ref Key L1</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(transaction, index) in transactions" :key="index">
-                    <td class="fw-medium">{{ index + 1 }}</td>
-                    <td>
-                      <span class="fw-medium">{{ transaction.AIT_CODE }}</span>
-                    </td>
-                    <td>{{ transaction.AIT_LINE_GT }}</td>
-                    <td>
-                      <span class="fw-medium">{{ transaction.AIT_DOC_NO_APP }}</span>
-                    </td>
-                    <td>{{ transaction.AIT_POSTING_DATE }}</td>
-                    <td class="fw-medium">
-                      <strong>{{ Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID') }}</strong>
-                    </td>
-                    <td>{{ transaction.AIT_COST_CENTER }}</td>
-                    <td>
-                      <code class="fw-medium text-dark">{{ transaction.AIT_ASSIGNTMENT }}</code>
-                    </td>
-                    <td>{{ transaction.AIT_REF_KEY_L1 }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="card-footer bg-light">
             <div class="d-flex justify-content-between align-items-center">
-              <small class="text-muted">
-                <i class="fas fa-info-circle me-1"></i>
-                Showing {{ transactions.length }} generated transactions
-              </small>
+              <h5 class="card-title mb-0">
+                <i class="fas fa-receipt me-2"></i>
+                Generated Transactions
+                <span class="badge bg-light text-dark ms-2">{{ transactions.length }} records</span>
+              </h5>
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" @click="debouncedGenerateTransactions">
+                <button class="btn btn-outline-light" @click="debouncedGenerateTransactions">
                   <i class="fas fa-sync-alt me-1"></i>
                   Refresh
                 </button>
-                <button class="btn btn-outline-success" @click="exportToExcelHandler">
+                <button class="btn btn-outline-light" @click="exportToExcelHandler">
                   <i class="fas fa-file-excel me-1"></i>
                   Export
                 </button>
               </div>
             </div>
+          </div>
+          <div class="card-body px-4">
+            <TableView
+              :items="transactionTableItems"
+              :t-key="transactionRawKeys"
+              :t-header="transactionHeaders"
+              :items-per-page="10"
+              :loading="isGenerating"
+              :on-row-click="handleTransactionRowClick"
+              :enable-keyboard-navigation="true"
+            >
+              <!-- Custom slot for AIT Code column -->
+              <template #cell(aitCode)="{ value }">
+                <span class="fw-medium badge bg-primary">{{ value }}</span>
+              </template>
+
+              <!-- Custom slot for amount column -->
+              <template #cell(amount)="{ item, value }">
+                <div class="text-end">
+                  <strong class="fw-bold text-success">{{ value }}</strong>
+                </div>
+              </template>
+
+              <!-- Custom slot for assignment column -->
+              <template #cell(assignment)="{ value }">
+                <code class="fw-medium text-dark bg-light px-2 py-1 rounded">{{ value }}</code>
+              </template>
+
+              <!-- Custom slot for posting date -->
+              <template #cell(postingDate)="{ value }">
+                <span class="text-muted">
+                  <i class="fas fa-calendar-alt me-1"></i>
+                  {{ value }}
+                </span>
+              </template>
+            </TableView>
           </div>
         </div>
 
