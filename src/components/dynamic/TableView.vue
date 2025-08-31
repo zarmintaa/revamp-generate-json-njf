@@ -309,12 +309,12 @@ onUnmounted(() => {
                 class="clickable-row"
                 @click="props.onRowClick?.(item)"
               >
-                <td class="fw-medium">{{ getRowNumber(idx) }}</td>
+                <td class="fw-medium text-dark">{{ getRowNumber(idx) }}</td>
                 <td
                   v-for="key in keys"
                   :key="key"
                   :title="item[key] || '-'"
-                  class="text-truncate fw-medium"
+                  class="text-truncate fw-medium text-dark"
                   style="max-width: 400px"
                 >
                   <slot :name="`cell(${key})`" :item="item" :value="item[key]">
@@ -322,7 +322,7 @@ onUnmounted(() => {
                       <template v-if="props.columnLinks && props.columnLinks[key]">
                         <router-link
                           :to="props.columnLinks[key](item)"
-                          class="text-primary text-decoration-none"
+                          class="text-primary text-decoration-none text-dark"
                           @click.stop
                         >
                           {{ formatValue(item[key], key) }}

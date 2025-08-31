@@ -55,11 +55,15 @@ export const transactionMapper = (
   let transactionAmount
 
   if (contractUploaded.bunga) {
-    bunga = contractUploaded.bunga
+    if (+contractUploaded.bunga !== 0) {
+      bunga = contractUploaded.bunga
+    }
   }
 
   if (contractUploaded.pokok) {
-    pokok = contractUploaded.pokok
+    if (+contractUploaded.pokok !== 0) {
+      pokok = contractUploaded.pokok
+    }
   }
 
   if (transform.amountType.trim() === 'BUNGA') {
@@ -72,7 +76,7 @@ export const transactionMapper = (
 
   if (transform.amountType.trim() === 'SOLD') {
     if (+transform.lineGt === 1) {
-      if (contractUploaded.sold) {
+      if (contractUploaded.sold && contractUploaded.sold !== '' && +contractUploaded.sold !== 0) {
         transactionAmount = contractUploaded.sold
       }
     }
@@ -80,7 +84,11 @@ export const transactionMapper = (
 
   if (transform.amountType.trim() === 'DENDA') {
     if (+transform.lineGt === 10) {
-      if (contractUploaded.denda) {
+      if (
+        contractUploaded.denda &&
+        contractUploaded.denda !== '' &&
+        +contractUploaded.denda !== 0
+      ) {
         transactionAmount = contractUploaded.denda
       }
     }
@@ -88,7 +96,11 @@ export const transactionMapper = (
 
   if (transform.amountType.trim() === 'EXPENSE') {
     if (+transform.lineGt === 17) {
-      if (contractUploaded.expense) {
+      if (
+        contractUploaded.expense &&
+        contractUploaded.expense !== '' &&
+        +contractUploaded.expense !== 0
+      ) {
         transactionAmount = contractUploaded.expense
       }
     }
@@ -102,7 +114,10 @@ export const transactionMapper = (
       docNoApp.value,
       formatDate(dateTransaction),
       '000',
-      contractUploaded.instalment || instalment,
+      contractUploaded.instalment ||
+        contractUploaded.inst_no ||
+        contractUploaded.instalment_number ||
+        instalment,
       transactionAmount,
     )
   }

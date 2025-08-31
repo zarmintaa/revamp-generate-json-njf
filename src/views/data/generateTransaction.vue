@@ -554,19 +554,21 @@ const handleTransactionRowClick = (row) => {
 
         <!-- Generated Transactions Table using TableView -->
         <div v-if="transactions.length > 0" class="card shadow-sm">
-          <div class="card-header bg-success">
+          <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
               <h5 class="card-title mb-0">
                 <i class="fas fa-receipt me-2"></i>
                 Generated Transactions
-                <span class="badge bg-light text-dark ms-2">{{ transactions.length }} records</span>
+                <span class="badge bg-success text-light ms-2"
+                  >{{ transactions.length }} records</span
+                >
               </h5>
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-light" @click="debouncedGenerateTransactions">
+                <button class="btn btn-outline-primary" @click="debouncedGenerateTransactions">
                   <i class="fas fa-sync-alt me-1"></i>
                   Refresh
                 </button>
-                <button class="btn btn-outline-light" @click="exportToExcelHandler">
+                <button class="btn btn-outline-success" @click="exportToExcelHandler">
                   <i class="fas fa-file-excel me-1"></i>
                   Export
                 </button>
@@ -585,27 +587,19 @@ const handleTransactionRowClick = (row) => {
             >
               <!-- Custom slot for AIT Code column -->
               <template #cell(aitCode)="{ value }">
-                <span class="fw-medium badge bg-primary">{{ value }}</span>
+                <span class="fw-medium text-dark">{{ value }}</span>
               </template>
 
               <!-- Custom slot for amount column -->
               <template #cell(amount)="{ item, value }">
-                <div class="text-end">
-                  <strong class="fw-bold text-success">{{ value }}</strong>
+                <div class="text-start">
+                  <strong class="fw-bold">{{ value }}</strong>
                 </div>
               </template>
 
               <!-- Custom slot for assignment column -->
               <template #cell(assignment)="{ value }">
                 <code class="fw-medium text-dark bg-light px-2 py-1 rounded">{{ value }}</code>
-              </template>
-
-              <!-- Custom slot for posting date -->
-              <template #cell(postingDate)="{ value }">
-                <span class="text-muted">
-                  <i class="fas fa-calendar-alt me-1"></i>
-                  {{ value }}
-                </span>
               </template>
             </TableView>
           </div>
