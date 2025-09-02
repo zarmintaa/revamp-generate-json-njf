@@ -235,12 +235,14 @@ onUnmounted(() => {
         <table class="table table-hover">
           <thead>
             <tr>
-              <th v-if="!props.loading && !localLoading && !props.error">No</th>
+              <th class="fw-bold text-dark" v-if="!props.loading && !localLoading && !props.error">
+                No
+              </th>
               <th
                 v-for="(header, idx) in headers"
                 :key="header"
                 :title="`Sort by ${header}`"
-                class="user-select-none"
+                class="user-select-none fw-bold text-dark"
                 style="min-width: 150px; cursor: pointer"
                 @click="toggleSort(keys[idx])"
               >
@@ -309,12 +311,12 @@ onUnmounted(() => {
                 class="clickable-row"
                 @click="props.onRowClick?.(item)"
               >
-                <td class="fw-medium text-dark">{{ getRowNumber(idx) }}</td>
+                <td class="text-dark">{{ getRowNumber(idx) }}</td>
                 <td
                   v-for="key in keys"
                   :key="key"
                   :title="item[key] || '-'"
-                  class="text-truncate fw-medium text-dark"
+                  class="text-truncate text-dark"
                   style="max-width: 400px"
                 >
                   <slot :name="`cell(${key})`" :item="item" :value="item[key]">

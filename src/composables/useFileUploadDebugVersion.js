@@ -11,6 +11,7 @@ export function useFileUpload() {
   const isFileNotReady = ref(true)
   const isProses = ref(false)
   const fileType = ref('EXCEL')
+  const processingProgress = ref(0)
 
   const handleFileChange = (event) => {
     const file = event.target.files[0]
@@ -32,24 +33,33 @@ export function useFileUpload() {
 
       reader.onload = async (e) => {
         try {
+          console.log('🔄 Starting Excel buffer processing...')
           const buffer = e.target.result
+
           await workbook.xlsx.load(buffer)
+          console.log('✅ Workbook loaded successfully')
 
           const worksheet = workbook.getWorksheet(1)
-          const jsonData = []
-          const headers = []
-
           if (!worksheet) {
             throw new Error('No worksheet found in Excel file')
           }
+
+          console.log(`📊 Worksheet found with ${worksheet.rowCount} rows`)
+
+          const jsonData = []
+          const headers = []
 
           // Get headers from first row
           const headerRow = worksheet.getRow(1)
           headerRow.eachCell((cell, colNumber) => {
             headers.push(cell.value?.toString() || `Column ${colNumber}`)
           })
+          console.log('📋 Headers extracted:', headers.length, 'columns')
 
           // Get data from rows (starting from row 2)
+          let processedRows = 0
+          const totalDataRows = worksheet.rowCount - 1
+
           worksheet.eachRow((row, rowNumber) => {
             if (rowNumber > 1) {
               const rowData = {}
@@ -62,8 +72,16 @@ export function useFileUpload() {
                 rowData[header] = resultReadRow
               })
               jsonData.push(rowData)
+              processedRows++
+
+              // Log progress setiap 1000 rows
+              if (processedRows % 1000 === 0) {
+                console.log(`📈 Progress: ${processedRows}/${totalDataRows} rows processed`)
+              }
             }
           })
+
+          console.log(`✅ Excel processing completed: ${jsonData.length} rows extracted`)
 
           resolve({
             headers,
@@ -71,11 +89,16 @@ export function useFileUpload() {
             type: 'excel',
           })
         } catch (error) {
+          console.error('❌ Error in Excel processing:', error)
           reject(new Error(`Error reading Excel file: ${error.message}`))
         }
       }
 
-      reader.onerror = () => reject(new Error('Error reading file'))
+      reader.onerror = (error) => {
+        console.error('❌ FileReader error:', error)
+        reject(new Error('Error reading file'))
+      }
+
       reader.readAsArrayBuffer(file)
     })
   }
@@ -113,30 +136,38 @@ export function useFileUpload() {
   }
 
   const processFile = async () => {
-    isProses.value = true
-    errorMessage.value = null
-    fileData.value = null
+    console.log('🚀 =================================')
+    console.log('🚀 STARTING PROCESS FILE')
+    console.log('🚀 =================================')
 
     const toast = useToast()
 
-    console.log('📁 File info:', {
-      name: fileInput.value.name,
-      size: fileInput.value.size,
-      type: fileInput.value.type,
-    })
+    // Test toast di awal
+    console.log('🧪 Testing toast at start...')
+    toast.info('Debug', 'Process started - testing toast', 2000)
 
-    toast.info(
-      'File Processing',
-      `Process started - read ${fileInput.value.name}, size : ${Math.floor(fileInput.value.size / 1000)} Kb`,
-      5000,
-    )
+    isProses.value = true
+    errorMessage.value = null
+    fileData.value = null
+    processingProgress.value = 0
 
     try {
       if (!fileInput.value) {
         throw new Error(`Please select a ${fileType.value} file first`)
       }
 
+      console.log('📁 File info:', {
+        name: fileInput.value.name,
+        size: fileInput.value.size,
+        type: fileInput.value.type,
+      })
+
+      // Force Vue reactivity update
+      await nextTick()
+
       let data
+      console.log('🔄 Starting file processing...')
+
       if (fileType.value === 'EXCEL') {
         data = await readExcelFile(fileInput.value)
       } else if (fileType.value === 'JSON') {
@@ -145,22 +176,58 @@ export function useFileUpload() {
         throw new Error('Unsupported file type')
       }
 
+      console.log('✅ Data processing completed:', {
+        headers: data.headers.length,
+        rows: data.data.length,
+        type: data.type,
+      })
+
       fileData.value = data
 
-      // SOLUSI: Tunggu nextTick sebelum menampilkan toast success
-      await nextTick()
+      // Multiple attempts untuk memastikan toast muncul
+      console.log('🎉 About to show success toast...')
 
-      toast.success('File Processing', `Success! Processed ${data.data.length} rows`, 5000)
-      console.log('Success for processing file')
+      // Attempt 1: Immediate
+      toast.success('File Processing', `1 - SUCCESS! Processed ${data.data.length} rows`, 5000)
+      console.log('✅ SUCCESS TOAST TRIGGERED - Attempt 1')
+
+      // Attempt 2: After nextTick
+      await nextTick()
+      toast.success('Processing Complete', `2 - File processed: ${data.data.length} rows`, 5000)
+      console.log('✅ SUCCESS TOAST TRIGGERED - Attempt 2 (after nextTick)')
+
+      // Attempt 3: After timeout
+      setTimeout(() => {
+        toast.success('Final Confirmation', `3 - Data ready: ${data.data.length} rows`, 5000)
+        console.log('✅ SUCCESS TOAST TRIGGERED - Attempt 3 (after timeout)')
+      }, 100)
+
+      // Attempt 4: Different toast method (jika ada)
+      if (toast.show) {
+        toast.show({
+          type: 'success',
+          title: 'Alternative Toast',
+          message: `Processing completed: ${data.data.length} rows`,
+          duration: 5000,
+        })
+        console.log('✅ ALTERNATIVE TOAST METHOD TRIGGERED')
+      }
     } catch (error) {
-      console.error('Error processing file:', error)
+      console.error('❌ ERROR in processFile:', error)
+      console.error('❌ Error stack:', error.stack)
 
-      // Untuk error toast, juga gunakan nextTick untuk konsistensi
-      await nextTick()
-      toast.error('Error processing file', error.message || 'Failed to process file', 5000)
+      toast.error('Error Processing File', error.message || 'Failed to process file', 5000)
+      console.log('🔥 ERROR TOAST TRIGGERED')
+
       errorMessage.value = error.message || 'Failed to process file'
     } finally {
+      console.log('🏁 Process completed, setting isProses to false')
       isProses.value = false
+      processingProgress.value = 0
+
+      console.log('🚀 =================================')
+      console.log('🚀 PROCESS FILE COMPLETED')
+      console.log('🚀 =================================')
     }
   }
 
@@ -171,6 +238,16 @@ export function useFileUpload() {
     errorMessage.value = null
     isFileNotReady.value = true
     isProses.value = false
+    processingProgress.value = 0
+  }
+
+  // Test function untuk debugging toast
+  const testToast = () => {
+    console.log('🧪 Testing toast manually...')
+    const toast = useToast()
+    toast.success('Test Toast', 'This is a test toast', 3000)
+    toast.error('Test Error', 'This is a test error', 3000)
+    toast.info('Test Info', 'This is a test info', 3000)
   }
 
   return {
@@ -182,10 +259,12 @@ export function useFileUpload() {
     isFileNotReady,
     isProses,
     fileType,
+    processingProgress,
 
     // Methods
     handleFileChange,
     processFile,
     resetFileData,
+    testToast, // Tambahan untuk debugging
   }
 }

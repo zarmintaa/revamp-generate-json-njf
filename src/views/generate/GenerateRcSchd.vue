@@ -300,8 +300,6 @@ const columnLinksConfiguration = {
           </Properties>
         </div>
 
-        <div class="card-body px-4"></div>
-
         <!-- Ganti table manual dengan TableView component -->
         <div v-if="fileData" class="card mt-4">
           <div class="card-header">Result Upload Data ({{ fileData.type.toUpperCase() }})</div>
