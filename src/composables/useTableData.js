@@ -1,3 +1,5 @@
+// composable/useTableData.hs
+
 import { computed } from 'vue'
 
 export const useTableData = (rawData, transformConfig = {}) => {

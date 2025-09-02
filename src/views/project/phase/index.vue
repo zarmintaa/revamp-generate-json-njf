@@ -1,3 +1,4 @@
+<!-- phase/index.vue -->
 <script setup>
 import TableView from '@/components/dynamic/TableView.vue'
 import { useTableData } from '@/composables/useTableData'

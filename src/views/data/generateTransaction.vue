@@ -283,14 +283,14 @@ const handleAmountBungaChange = debounce((value) => {
 const transactionTransformConfig = {
   excludeKeys: ['uuid'],
   includeKeys: [
-    'aitCode',
-    'lineGt',
-    'docNoApp',
-    'postingDate',
-    'amount',
-    'costCenter',
-    'assignment',
-    'refKeyL1',
+    // 'aitCode',
+    // 'lineGt',
+    // 'docNoApp',
+    // 'postingDate',
+    // 'amount',
+    // 'costCenter',
+    // 'assignment',
+    // 'refKeyL1',
   ],
   dataTransformer: (transaction) => {
     return {

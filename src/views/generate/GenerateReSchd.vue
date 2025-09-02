@@ -1,3 +1,4 @@
+<!-- GenerateMaster.vue -->
 <script setup>
 import { Utils } from '@/utils/doc-utils'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -6,9 +7,13 @@ import Properties from '@/components/common/generator/properties/Properties.vue'
 import PropertiesItem from '@/components/common/generator/properties/PropertiesItem.vue'
 import { useJsonTemplate } from '@/composables/useJsonTemplate.js'
 import { useFileUpload } from '@/composables/useFileUpload'
+import { useTableData } from '@/composables/useTableData'
+import TableView from '@/components/dynamic/TableView.vue'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
-const title = route.meta?.title || 'Generate RE-SCHD'
+const title = route.meta?.title || 'Generate RESCHD'
+const toast = useToast()
 
 const senderDocNo = ref(Utils.generateSenderDocNo())
 const jsonName = ref('RESCHD')
@@ -17,6 +22,7 @@ const sourceSystem = ref('AMAN')
 const docNoError = ref('')
 const jsonNameError = ref('')
 const sourceSystemError = ref('')
+const isLoading = ref(false)
 
 const {
   isPreviewJsonTemplate,
@@ -150,6 +156,37 @@ watch(
     deep: true,
   },
 )
+
+// Setup flexible table untuk menampilkan data file yang sudah diproses
+const dataTransformConfig = {
+  excludeKeys: [], // Bisa ditambahkan key yang ingin dikecualikan
+  includeKeys: [], // Bisa ditambahkan key spesifik yang ingin ditampilkan
+  dataTransformer: (data) => {
+    // Transform data sesuai kebutuhan, misalnya format tanggal, dll
+    return data
+  },
+}
+
+// Gunakan ref yang berisi array data dari fileData
+const processedData = computed(() => {
+  if (fileData.value && fileData.value.data) {
+    return fileData.value.data
+  }
+  return []
+})
+
+const { tableItems, rawKeys, headers } = useTableData(processedData, dataTransformConfig)
+
+// Event handlers untuk TableView
+const handleRowClick = (row) => {
+  toast.info('Row Clicked', `Data row: ${JSON.stringify(row)}`, 5000)
+}
+
+// Configuration untuk kolom yang bisa di-click (opsional)
+const columnLinksConfiguration = {
+  // Contoh: jika ada kolom 'id' yang ingin dijadikan link
+  // id: (row) => `/detail/${row.id}`,
+}
 </script>
 
 <template>
@@ -263,25 +300,23 @@ watch(
           </Properties>
         </div>
 
+        <div class="card-body px-4"></div>
+
+        <!-- Ganti table manual dengan TableView component -->
         <div v-if="fileData" class="card mt-4">
           <div class="card-header">Result Upload Data ({{ fileData.type.toUpperCase() }})</div>
-          <div class="table-responsive">
-            <table class="table table-bordered">
-              <thead>
-                <tr>
-                  <th v-for="(header, index) in fileData.headers" :key="index">
-                    {{ header }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, rowIndex) in fileData.data" :key="rowIndex">
-                  <td v-for="(value, key) in row" :key="key">
-                    {{ value === null ? 'null' : value }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="card-body">
+            <TableView
+              :items="tableItems"
+              :t-key="rawKeys"
+              :t-header="headers"
+              :items-per-page="10"
+              :loading="isProses"
+              :error="errorMessage"
+              :column-links="columnLinksConfiguration"
+              :on-row-click="handleRowClick"
+              :enable-keyboard-navigation="true"
+            />
           </div>
         </div>
 
