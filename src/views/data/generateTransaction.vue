@@ -299,8 +299,8 @@ const transactionTransformConfig = {
       lineGt: transaction.AIT_LINE_GT,
       docNoApp: transaction.AIT_DOC_NO_APP,
       postingDate: transaction.AIT_POSTING_DATE,
-      amount: Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID'),
-      rawAmount: transaction.AIT_AMOUNT1, // Keep raw amount for sorting
+      // amount: Number(transaction.AIT_AMOUNT1).toLocaleString('id-ID'),
+      amount: transaction.AIT_AMOUNT1, // Keep raw amount for sorting
       costCenter: transaction.AIT_COST_CENTER,
       assignment: transaction.AIT_ASSIGNTMENT,
       refKeyL1: transaction.AIT_REF_KEY_L1,
