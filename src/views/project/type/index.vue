@@ -3,7 +3,7 @@ import TableView from '@/components/dynamic/TableView.vue'
 import { useTableData } from '@/composables/useTableData'
 import { useToast } from '@/composables/useToast'
 import { formatReadableDate } from '@/utils/dayjs'
-import { inject, onMounted, ref, watch } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()

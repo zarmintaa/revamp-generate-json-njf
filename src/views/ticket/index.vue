@@ -2,7 +2,7 @@
 import TableView from '@/components/dynamic/TableView.vue'
 import { useTableData } from '@/composables/useTableData'
 import { formatReadableDate } from '@/utils/dayjs'
-import { computed, inject, onMounted, ref } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()

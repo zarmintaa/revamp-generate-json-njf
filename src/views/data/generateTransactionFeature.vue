@@ -5,14 +5,9 @@ import { useFileUpload } from '@/composables/useFileUpload'
 import { useToast } from '@/composables/useToast'
 import { useTableData } from '@/composables/useTableData'
 import { useAitParameter } from '@/composables/useAitParameter'
-import { formatReadableDate } from '@/utils/dayjs'
 import { Utils } from '@/utils/doc-utils'
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport'
-import {
-  generateAitParameterOptions,
-  validateContractForAitParameter,
-} from '@/utils/aitParameterUtils'
-import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Properties from '@/components/common/generator/properties/Properties.vue'
 import PropertiesItem from '@/components/common/generator/properties/PropertiesItem.vue'

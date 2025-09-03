@@ -1,7 +1,7 @@
 <!-- GenerateMaster.vue -->
 <script setup>
 import { Utils } from '@/utils/doc-utils'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Properties from '@/components/common/generator/properties/Properties.vue'
 import PropertiesItem from '@/components/common/generator/properties/PropertiesItem.vue'
