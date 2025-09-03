@@ -165,7 +165,7 @@ function getRowNumber(index) {
 
 function formatValue(value, key) {
   if (
-    (typeof value === 'number' && key.toLowerCase().includes('price')) ||
+    (typeof value === 'number' && key.toLowerCase().includes('harga')) ||
     (typeof value === 'number' && key.toLowerCase().includes('margin'))
   ) {
     return `Rp ${value.toLocaleString('id-ID')}`

@@ -6,6 +6,36 @@ export function useJsonTemplate() {
   const isPreviewJsonTemplate = ref(false)
   const copyStatus = ref('')
 
+  const filteringDataForMaster = (data) => {
+    return data.map(item => {
+      if (item.FUND_OBJT_PRICE){
+        item.FUND_OBJT_PRICE = safeConvertToNumber(item.FUND_OBJT_PRICE)
+      }
+
+      if (item.FUND_NET_DP) {
+        item.FUND_NET_DP = safeConvertToNumber(item.FUND_NET_DP)
+      }
+    })
+  }
+
+  const safeConvertToNumber = (str) => {
+    // Cek apakah string valid untuk dikonversi
+    if (str === null || str === undefined || str === '') {
+      return 0;
+    }
+
+    let num = Number(str);
+
+    // Cek apakah hasil konversi adalah NaN
+    if (isNaN(num)) {
+      toast.warning('Invalid Data', `Invalid data number format: ${str}`);
+      console.log('Invalid number format');
+      return 0;
+    }
+
+    return num;
+  }
+
   // Generic template generator - bisa di-override untuk template yang berbeda
   const generateTemplate = (config, fileData = null) => {
     const { docNo, jsonName, sourceSystem, nik } = config
@@ -14,11 +44,17 @@ export function useJsonTemplate() {
     let templateJson = {}
     let dataTrx = []
     if (fileData?.value) {
-      msgContent = fileData.value.data.map((record) => JSON.stringify({ data: { ...record } }))
+      msgContent = filteringDataForMaster(fileData.value.data).map((record) => JSON.stringify({ data: { ...record } }))
       dataTrx = fileData.value
     }
 
-    if (jsonName === 'MASTER' || jsonName === 'SCHD' || jsonName === 'RC_SCHD' || jsonName === 'RESCHD' || jsonName === 'CANCEL_PPD') {
+    if (
+      jsonName === 'MASTER' ||
+      jsonName === 'SCHD' ||
+      jsonName === 'RC_SCHD' ||
+      jsonName === 'RESCHD' ||
+      jsonName === 'CANCEL_PPD'
+    ) {
       templateJson = {
         data: [
           {
@@ -43,6 +79,10 @@ export function useJsonTemplate() {
               totalAmount += +item.AIT_AMOUNT1
             } else {
               totalAmount += 0
+            }
+
+            if (item.AIT_DOC_NO_APP) {
+              item.AIT_DOC_NO_APP = docNo
             }
           })
         } else {
