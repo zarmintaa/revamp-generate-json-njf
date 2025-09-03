@@ -76,7 +76,7 @@ export function useJsonTemplate() {
         if (totalRow > 0) {
           dataTrx.data.forEach((item) => {
             if (item.AIT_AMOUNT1) {
-              totalAmount += +item.AIT_AMOUNT1
+              totalAmount += safeConvertToNumber(item.AIT_AMOUNT1)
             } else {
               totalAmount += 0
             }
