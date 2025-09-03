@@ -44,7 +44,7 @@ export function useJsonTemplate() {
     let templateJson = {}
     let dataTrx = []
     if (fileData?.value) {
-      msgContent = filteringDataForMaster(fileData.value.data).map((record) => JSON.stringify({ data: { ...record } }))
+      msgContent = fileData.value.data.map((record) => JSON.stringify({ data: { ...record } }))
       dataTrx = fileData.value
     }
 
