@@ -7,8 +7,8 @@ export function useJsonTemplate() {
   const copyStatus = ref('')
 
   const filteringDataForMaster = (data) => {
-    return data.map(item => {
-      if (item.FUND_OBJT_PRICE){
+    return data.map((item) => {
+      if (item.FUND_OBJT_PRICE) {
         item.FUND_OBJT_PRICE = safeConvertToNumber(item.FUND_OBJT_PRICE)
       }
 
@@ -21,19 +21,19 @@ export function useJsonTemplate() {
   const safeConvertToNumber = (str) => {
     // Cek apakah string valid untuk dikonversi
     if (str === null || str === undefined || str === '') {
-      return 0;
+      return 0
     }
 
-    let num = Number(str);
+    let num = Number(str)
 
     // Cek apakah hasil konversi adalah NaN
     if (isNaN(num)) {
-      toast.warning('Invalid Data', `Invalid data number format: ${str}`);
-      console.log('Invalid number format');
-      return 0;
+      toast.warning('Invalid Data', `Invalid data number format: ${str}`)
+      console.log('Invalid number format')
+      return 0
     }
 
-    return num;
+    return num
   }
 
   // Generic template generator - bisa di-override untuk template yang berbeda
@@ -71,6 +71,8 @@ export function useJsonTemplate() {
     if (jsonName === 'TRX-FAST') {
       let totalRow = 0
       let totalAmount = 0
+      let ait_doc_no_app_trx = docNo || ''
+
       if (dataTrx.data) {
         totalRow = dataTrx.data.length
         if (totalRow > 0) {
@@ -82,7 +84,7 @@ export function useJsonTemplate() {
             }
 
             if (item.AIT_DOC_NO_APP) {
-              item.AIT_DOC_NO_APP = docNo
+              ait_doc_no_app_trx = item.AIT_DOC_NO_APP
             }
           })
         } else {
@@ -91,7 +93,7 @@ export function useJsonTemplate() {
       }
 
       templateJson = {
-        docNoApp: docNo,
+        docNoApp: ait_doc_no_app_trx,
         jumlahRow: totalRow,
         jumlahAmount: totalAmount,
         userNik: nik,
