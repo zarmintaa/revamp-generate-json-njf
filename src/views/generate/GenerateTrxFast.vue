@@ -138,7 +138,7 @@ const { tableItems, rawKeys, headers } = useTableData(processedData, dataTransfo
 
 // Event handlers untuk TableView
 const handleRowClick = (row) => {
-  toast.info('Row Clicked', `Data row: ${JSON.stringify(row)}`, 5000)
+  // toast.info('Row Clicked', `Data row: ${JSON.stringify(row)}`, 5000)
 }
 
 // Configuration untuk kolom yang bisa di-click (opsional)
