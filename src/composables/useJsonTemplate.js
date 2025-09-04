@@ -5,6 +5,7 @@ import { useToast } from './useToast'
 export function useJsonTemplate() {
   const isPreviewJsonTemplate = ref(false)
   const copyStatus = ref('')
+    const toast = useToast()
 
   const filteringDataForMaster = (data) => {
     return data.map((item) => {
@@ -71,7 +72,7 @@ export function useJsonTemplate() {
     if (jsonName === 'TRX-FAST') {
       let totalRow = 0
       let totalAmount = 0
-      let ait_doc_no_app_trx = docNo || ''
+      let ait_doc_no_app_trx = null;
 
       if (dataTrx.data) {
         totalRow = dataTrx.data.length
@@ -85,11 +86,16 @@ export function useJsonTemplate() {
 
             if (item.AIT_DOC_NO_APP) {
               ait_doc_no_app_trx = item.AIT_DOC_NO_APP
+
             }
           })
         } else {
           totalAmount = 0
         }
+      }
+
+      if (ait_doc_no_app_trx || ait_doc_no_app_trx !== null) {
+          toast.info('AIT_DOC_NO_APP Value', `AIT_DOC_NO_APP set to ${ait_doc_no_app_trx}`, 8000)
       }
 
       templateJson = {
