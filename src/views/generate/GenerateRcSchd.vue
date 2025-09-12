@@ -12,11 +12,11 @@ import TableView from '@/components/dynamic/TableView.vue'
 import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
-const title = route.meta?.title || 'Generate RC-SCHD'
+const title = route.meta?.title || 'Generate RC_SCHD'
 const toast = useToast()
 
 const senderDocNo = ref(Utils.generateSenderDocNo())
-const jsonName = ref('RC-SCHD')
+const jsonName = ref('RC_SCHD')
 const sourceSystem = ref('AMAN')
 
 const docNoError = ref('')
