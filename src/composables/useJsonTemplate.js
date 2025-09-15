@@ -53,7 +53,7 @@ export function useJsonTemplate() {
       jsonName === 'MASTER' ||
       jsonName === 'SCHD' ||
       jsonName === 'RC_SCHD' ||
-      jsonName === 'RESCHD' ||
+      jsonName === 'RC_RESCHD' ||
       jsonName === 'CANCEL_PPD'
     ) {
       templateJson = {
