@@ -25,7 +25,7 @@ export const sideBarItem = [
       },
       {
         type: 'link',
-        title: 'RESCHD',
+        title: 'RC_RESCHD',
         to: '/generate-re-schd',
         external: false,
       },
