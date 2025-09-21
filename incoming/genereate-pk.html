@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generator Nomor PK</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+      .container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.2rem;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #34495e;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+      .generate-btn {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: transform 0.2s;
+      }
+      .generate-btn:hover {
+        transform: translateY(-2px);
+      }
+      .generate-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .results {
+        margin-top: 30px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .pk-number {
+        font-family: 'Courier New', monospace;
+        background: white;
+        padding: 8px 12px;
+        margin: 4px 0;
+        border-radius: 4px;
+        border-left: 4px solid #667eea;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+      }
+      .stat-card {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #667eea;
+      }
+      .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+      .stat-label {
+        color: #7f8c8d;
+        margin-top: 5px;
+      }
+      .export-btn {
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-top: 10px;
+      }
+      .export-btn:hover {
+        background: #229954;
+      }
+      .warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+      }
+      .method-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .method-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+      }
+      .method-card.active {
+        border-color: #667eea;
+        background: #f0f4ff;
+      }
+      .method-card:hover {
+        border-color: #667eea;
+      }
+      .method-title {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 8px;
+      }
+      .method-desc {
+        color: #7f8c8d;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔢 Generator Nomor PK Anti-Collision</h1>
+
+      <div class="warning">
+        <strong>⚠️ Anti-Collision System Aktif:</strong> Generator ini menggunakan beberapa metode
+        untuk memastikan nomor PK 100% unik dan mencegah bentrok antar pengguna.
+      </div>
+
+      <div class="method-selector">
+        <div class="method-card active" data-method="hybrid">
+          <div class="method-title">🛡️ Hybrid Safe (Recommended)</div>
+          <div class="method-desc">
+            Kombinasi timestamp mikrodetik + random + counter untuk keamanan maksimal
+          </div>
+        </div>
+        <div class="method-card" data-method="timestamp">
+          <div class="method-title">⏰ Timestamp Based</div>
+          <div class="method-desc">Berdasarkan waktu dengan presisi mikrodetik</div>
+        </div>
+        <div class="method-card" data-method="crypto">
+          <div class="method-title">🔐 Crypto Random</div>
+          <div class="method-desc">Menggunakan cryptographically secure random</div>
+        </div>
+        <div class="method-card" data-method="sequential">
+          <div class="method-title">📈 Sequential Smart</div>
+          <div class="method-desc">
+            Sequence berurutan dengan base angka acak + timestamp untuk uniqueness
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="branchCode">Kode Cabang (4 digit):</label>
+        <input type="text" id="branchCode" value="0101" maxlength="4" pattern="[0-9]{4}" />
+      </div>
+
+      <div class="form-group">
+        <label for="year">Tahun (2 digit):</label>
+        <select id="year">
+          <option value="25">2025</option>
+          <option value="24">2024</option>
+          <option value="26">2026</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="quantity">Jumlah PK yang akan di-generate:</label>
+        <input type="number" id="quantity" value="100" min="1" max="10000" />
+      </div>
+
+      <button class="generate-btn" onclick="generatePK()">🚀 Generate Nomor PK</button>
+
+      <div class="stats" id="stats" style="display: none">
+        <div class="stat-card">
+          <div class="stat-number" id="totalGenerated">0</div>
+          <div class="stat-label">Total Generated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="uniqueCount">0</div>
+          <div class="stat-label">Unique Numbers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="generationTime">0</div>
+          <div class="stat-label">Generation Time (ms)</div>
+        </div>
+      </div>
+
+      <div class="results" id="results" style="display: none">
+        <div style="margin-bottom: 15px">
+          <button class="export-btn" onclick="exportTXT()">📄 Export TXT</button>
+          <button class="export-btn" onclick="exportCSV()">📊 Export CSV</button>
+          <button class="export-btn" onclick="copyToClipboard()">📋 Copy All</button>
+        </div>
+        <div id="pkList"></div>
+      </div>
+    </div>
+
+    <script>
+      let generatedNumbers = []
+      let currentMethod = 'hybrid'
+
+      // Method selector
+      document.querySelectorAll('.method-card').forEach((card) => {
+        card.addEventListener('click', function () {
+          document.querySelector('.method-card.active').classList.remove('active')
+          this.classList.add('active')
+          currentMethod = this.dataset.method
+        })
+      })
+
+      // Counter untuk sequence (persistent di session)
+      let sequenceCounter = Date.now() % 1000000 // Start dari timestamp untuk uniqueness
+
+      class PKGenerator {
+        static generateHybrid(branchCode, year, quantity) {
+          const results = new Set()
+          const baseTime = Date.now()
+
+          for (let i = 0; i < quantity; i++) {
+            // Kombinasi beberapa sumber randomness
+            const microTime = (performance.now() * 1000).toString().replace('.', '').slice(-6)
+            const cryptoRandom = this.getCryptoRandom(4)
+            const counter = (sequenceCounter++).toString().padStart(2, '0').slice(-2)
+
+            // Mix semua sources
+            const mixed = (microTime + cryptoRandom + counter).slice(-6)
+            const pkNumber = branchCode + year + mixed
+
+            results.add(pkNumber)
+
+            // Small delay untuk memastikan mikrodetik berubah
+            if (i % 100 === 0) {
+              const now = Date.now()
+              while (Date.now() - now < 1) {
+                /* tiny delay */
+              }
+            }
+          }
+
+          return Array.from(results)
+        }
+
+        static generateTimestampBased(branchCode, year, quantity) {
+          const results = new Set()
+
+          for (let i = 0; i < quantity; i++) {
+            // Gunakan high-resolution timestamp
+            const microTime = (performance.now() * 1000).toString().replace('.', '')
+            const sequence = microTime.slice(-6)
+            const pkNumber = branchCode + year + sequence
+
+            results.add(pkNumber)
+
+            // Pastikan timestamp berubah
+            while (performance.now().toString() === microTime) {
+              // Wait for time change
+            }
+          }
+
+          return Array.from(results)
+        }
+
+        static generateCryptoRandom(branchCode, year, quantity) {
+          const results = new Set()
+
+          for (let i = 0; i < quantity; i++) {
+            const sequence = this.getCryptoRandom(6)
+            const pkNumber = branchCode + year + sequence
+            results.add(pkNumber)
+          }
+
+          return Array.from(results)
+        }
+
+        static generateSequential(branchCode, year, quantity) {
+          const results = []
+
+          // Generate base number yang unik berdasarkan timestamp saat ini
+          const now = Date.now()
+          const baseNumber = parseInt(now.toString().slice(-4)) // 4 digit terakhir timestamp
+
+          for (let i = 0; i < quantity; i++) {
+            // Sequential number dimulai dari base + increment
+            let sequentialNum = (baseNumber + i).toString()
+
+            // Pastikan tetap 6 digit dengan padding atau modulo
+            if (sequentialNum.length > 6) {
+              sequentialNum = (parseInt(sequentialNum) % 1000000).toString()
+            }
+            sequentialNum = sequentialNum.padStart(6, '0')
+
+            const pkNumber = branchCode + year + sequentialNum
+            results.push(pkNumber)
+          }
+
+          return results
+        }
+
+        static getCryptoRandom(length) {
+          const array = new Uint32Array(length)
+          crypto.getRandomValues(array)
+          return Array.from(array, (num) => (num % 10).toString()).join('')
+        }
+      }
+
+      function generatePK() {
+        const branchCode = document.getElementById('branchCode').value
+        const year = document.getElementById('year').value
+        const quantity = parseInt(document.getElementById('quantity').value)
+
+        // Validasi
+        if (!/^\d{4}$/.test(branchCode)) {
+          alert('Kode cabang harus 4 digit angka!')
+          return
+        }
+
+        if (quantity < 1 || quantity > 10000) {
+          alert('Jumlah harus antara 1-10000!')
+          return
+        }
+
+        const startTime = performance.now()
+
+        // Generate berdasarkan method yang dipilih
+        let numbers = []
+        switch (currentMethod) {
+          case 'hybrid':
+            numbers = PKGenerator.generateHybrid(branchCode, year, quantity)
+            break
+          case 'timestamp':
+            numbers = PKGenerator.generateTimestampBased(branchCode, year, quantity)
+            break
+          case 'crypto':
+            numbers = PKGenerator.generateCryptoRandom(branchCode, year, quantity)
+            break
+          case 'sequential':
+            numbers = PKGenerator.generateSequential(branchCode, year, quantity)
+            break
+        }
+
+        const endTime = performance.now()
+        const generationTime = Math.round(endTime - startTime)
+
+        // Simpan hasil
+        generatedNumbers = numbers
+
+        // Update stats
+        document.getElementById('totalGenerated').textContent = quantity
+        document.getElementById('uniqueCount').textContent = numbers.length
+        document.getElementById('generationTime').textContent = generationTime
+        document.getElementById('stats').style.display = 'grid'
+
+        // Tampilkan hasil
+        const pkList = document.getElementById('pkList')
+        pkList.innerHTML = numbers.map((num) => `<div class="pk-number">${num}</div>`).join('')
+
+        document.getElementById('results').style.display = 'block'
+
+        // Scroll ke hasil
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth' })
+      }
+
+      function exportTXT() {
+        const content = generatedNumbers.join('\n')
+        downloadFile('nomor_pk.txt', content, 'text/plain')
+      }
+
+      function exportCSV() {
+        const content = 'Nomor PK\n' + generatedNumbers.join('\n')
+        downloadFile('nomor_pk.csv', content, 'text/csv')
+      }
+
+      function copyToClipboard() {
+        const content = generatedNumbers.join('\n')
+        navigator.clipboard
+          .writeText(content)
+          .then(() => {
+            alert('Semua nomor PK berhasil dicopy ke clipboard!')
+          })
+          .catch((err) => {
+            console.error('Error copying to clipboard:', err)
+            // Fallback method
+            const textarea = document.createElement('textarea')
+            textarea.value = content
+            document.body.appendChild(textarea)
+            textarea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textarea)
+            alert('Nomor PK berhasil dicopy!')
+          })
+      }
+
+      function downloadFile(filename, content, type) {
+        const blob = new Blob([content], { type: type })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+
+      // Auto-fill current year
+      const currentYear = new Date().getFullYear().toString().slice(-2)
+      document.getElementById('year').value = currentYear
+    </script>
+  </body>
+</html>

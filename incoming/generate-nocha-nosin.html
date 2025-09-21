@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generator Nomor Rangka dan Mesin Kendaraan</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      h1 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 30px;
+        font-size: 2rem;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #555;
+      }
+
+      select,
+      input,
+      button {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+
+      select:focus,
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 10px;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      }
+
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .result {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 5px solid #28a745;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .result h3 {
+        margin-top: 0;
+        color: #28a745;
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        padding-bottom: 10px;
+      }
+
+      .bulk-result {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .bulk-result-item {
+        background: #fff;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #e1e8ed;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+      }
+
+      .progress-container {
+        margin: 20px 0;
+        display: none;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e1e8ed;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      .progress-text {
+        text-align: center;
+        margin-top: 10px;
+        font-weight: 600;
+      }
+
+      .number-display {
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        font-family: 'Courier New', monospace;
+        font-size: 18px;
+        font-weight: bold;
+        border: 2px dashed #28a745;
+      }
+
+      .history {
+        margin-top: 30px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .history h3 {
+        color: #2c3e50;
+      }
+
+      .history-item {
+        background: #f1f3f4;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+
+      .warning {
+        background: #fff3cd;
+        color: #856404;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 5px solid #ffc107;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🚗 Generator Nomor Rangka & Mesin Kendaraan</h1>
+
+      <form id="vehicleForm">
+        <div class="form-group">
+          <label for="userId">ID User:</label>
+          <input
+            type="text"
+            id="userId"
+            required
+            placeholder="Masukkan ID user (contoh: USER001)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="vehicleType">Jenis Kendaraan:</label>
+          <select id="vehicleType" required>
+            <option value="">Pilih jenis kendaraan</option>
+            <option value="car">Mobil</option>
+            <option value="motorcycle">Motor</option>
+            <option value="truck">Truk</option>
+            <option value="bus">Bus</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="brand">Merk Kendaraan:</label>
+          <select id="brand" required>
+            <option value="">Pilih merk</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="quantity">Jumlah yang akan di-generate:</label>
+          <input
+            type="number"
+            id="quantity"
+            min="1"
+            max="10000"
+            value="1"
+            required
+            placeholder="Masukkan jumlah (1-10000)"
+          />
+          <small style="color: #666; font-size: 14px"
+            >Maksimal 10.000 nomor per sekali generate</small
+          >
+        </div>
+
+        <button type="submit" id="generateBtn">Generate Nomor</button>
+        <button
+          type="button"
+          id="exportBtn"
+          style="display: none; background: #28a745; margin-left: 10px"
+        >
+          Export ke CSV
+        </button>
+      </form>
+
+      <div id="result" style="display: none"></div>
+
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Generating...</div>
+      </div>
+
+      <div id="warning" style="display: none"></div>
+      <div id="history"></div>
+    </div>
+
+    <script>
+      class VehicleNumberGenerator {
+        constructor() {
+          // Storage untuk menyimpan nomor yang sudah di-generate per user
+          this.generatedNumbers = {}
+          this.history = []
+          this.currentBatch = [] // Untuk menyimpan hasil generate batch
+
+          // Konfigurasi merk kendaraan
+          this.brands = {
+            car: [
+              'Toyota',
+              'Honda',
+              'Suzuki',
+              'Daihatsu',
+              'Mitsubishi',
+              'Nissan',
+              'Mazda',
+              'Hyundai',
+              'KIA',
+            ],
+            motorcycle: [
+              'Honda',
+              'Yamaha',
+              'Suzuki',
+              'Kawasaki',
+              'TVS',
+              'Benelli',
+              'Royal Enfield',
+            ],
+            truck: ['Hino', 'Mitsubishi', 'Isuzu', 'UD Trucks', 'Volvo', 'Scania'],
+            bus: ['Mercedes-Benz', 'Hino', 'Mitsubishi', 'Isuzu', 'Scania', 'Volvo'],
+          }
+
+          // Kode wilayah Indonesia (sample)
+          this.regionCodes = ['JKT', 'BDG', 'SBY', 'MDN', 'DPS', 'PLB', 'PKU', 'BTM', 'MLG', 'SMG']
+
+          this.initializeEventListeners()
+          this.updateHistory()
+        }
+
+        initializeEventListeners() {
+          const vehicleTypeSelect = document.getElementById('vehicleType')
+          const brandSelect = document.getElementById('brand')
+          const form = document.getElementById('vehicleForm')
+          const exportBtn = document.getElementById('exportBtn')
+
+          vehicleTypeSelect.addEventListener('change', (e) => {
+            this.updateBrandOptions(e.target.value)
+          })
+
+          form.addEventListener('submit', (e) => {
+            e.preventDefault()
+            this.generateNumbers()
+          })
+
+          exportBtn.addEventListener('click', () => {
+            this.exportToCSV()
+          })
+        }
+
+        updateBrandOptions(vehicleType) {
+          const brandSelect = document.getElementById('brand')
+          brandSelect.innerHTML = '<option value="">Pilih merk</option>'
+
+          if (vehicleType && this.brands[vehicleType]) {
+            this.brands[vehicleType].forEach((brand) => {
+              const option = document.createElement('option')
+              option.value = brand
+              option.textContent = brand
+              brandSelect.appendChild(option)
+            })
+          }
+        }
+
+        generateChassisNumber(vehicleType, brand, userId) {
+          const year = new Date().getFullYear()
+          const regionCode = this.regionCodes[Math.floor(Math.random() * this.regionCodes.length)]
+
+          // Format: [REGION][BRAND_CODE][YEAR][VEHICLE_TYPE][RANDOM]
+          const brandCode = brand.substring(0, 3).toUpperCase()
+          const typeCode = vehicleType.substring(0, 1).toUpperCase()
+          const yearCode = year.toString().slice(-2)
+
+          let chassisNumber
+          let attempts = 0
+          const maxAttempts = 1000
+
+          do {
+            const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase()
+            chassisNumber = `${regionCode}${brandCode}${yearCode}${typeCode}${randomPart}`
+            attempts++
+
+            if (attempts >= maxAttempts) {
+              throw new Error(
+                'Tidak dapat menghasilkan nomor rangka yang unik setelah beberapa percobaan',
+              )
+            }
+          } while (this.isNumberUsed(userId, chassisNumber, 'chassis'))
+
+          return chassisNumber
+        }
+
+        generateEngineNumber(vehicleType, brand, userId) {
+          const year = new Date().getFullYear()
+
+          // Format: [BRAND_CODE][ENGINE_TYPE][YEAR][RANDOM]
+          const brandCode = brand.substring(0, 2).toUpperCase()
+          const engineType = this.getEngineType(vehicleType)
+          const yearCode = year.toString().slice(-2)
+
+          let engineNumber
+          let attempts = 0
+          const maxAttempts = 1000
+
+          do {
+            const randomPart = Math.floor(Math.random() * 999999)
+              .toString()
+              .padStart(6, '0')
+            engineNumber = `${brandCode}${engineType}${yearCode}${randomPart}`
+            attempts++
+
+            if (attempts >= maxAttempts) {
+              throw new Error(
+                'Tidak dapat menghasilkan nomor mesin yang unik setelah beberapa percobaan',
+              )
+            }
+          } while (this.isNumberUsed(userId, engineNumber, 'engine'))
+
+          return engineNumber
+        }
+
+        getEngineType(vehicleType) {
+          const engineTypes = {
+            car: 'A',
+            motorcycle: 'M',
+            truck: 'T',
+            bus: 'B',
+          }
+          return engineTypes[vehicleType] || 'X'
+        }
+
+        isNumberUsed(userId, number, type) {
+          if (!this.generatedNumbers[userId]) {
+            this.generatedNumbers[userId] = { chassis: new Set(), engine: new Set() }
+          }
+          return this.generatedNumbers[userId][type].has(number)
+        }
+
+        storeGeneratedNumber(userId, number, type) {
+          if (!this.generatedNumbers[userId]) {
+            this.generatedNumbers[userId] = { chassis: new Set(), engine: new Set() }
+          }
+          this.generatedNumbers[userId][type].add(number)
+        }
+
+        generateNumbers() {
+          const userId = document.getElementById('userId').value.trim()
+          const vehicleType = document.getElementById('vehicleType').value
+          const brand = document.getElementById('brand').value
+          const quantity = parseInt(document.getElementById('quantity').value)
+
+          if (!userId || !vehicleType || !brand || !quantity) {
+            this.showWarning('Mohon lengkapi semua field')
+            return
+          }
+
+          if (quantity < 1 || quantity > 10000) {
+            this.showWarning('Jumlah harus antara 1 sampai 10.000')
+            return
+          }
+
+          // Check if single or bulk generation
+          if (quantity === 1) {
+            this.generateSingleNumber(userId, vehicleType, brand)
+          } else {
+            this.generateBulkNumbers(userId, vehicleType, brand, quantity)
+          }
+        }
+
+        generateSingleNumber(userId, vehicleType, brand) {
+          try {
+            const chassisNumber = this.generateChassisNumber(vehicleType, brand, userId)
+            const engineNumber = this.generateEngineNumber(vehicleType, brand, userId)
+
+            // Simpan nomor yang sudah di-generate
+            this.storeGeneratedNumber(userId, chassisNumber, 'chassis')
+            this.storeGeneratedNumber(userId, engineNumber, 'engine')
+
+            // Tambah ke history
+            this.history.unshift({
+              timestamp: new Date(),
+              userId,
+              vehicleType,
+              brand,
+              chassisNumber,
+              engineNumber,
+              type: 'single',
+            })
+
+            this.showSingleResult(chassisNumber, engineNumber, vehicleType, brand)
+            this.updateHistory()
+            this.hideWarning()
+
+            // Hide export button for single generation
+            document.getElementById('exportBtn').style.display = 'none'
+          } catch (error) {
+            this.showWarning(error.message)
+          }
+        }
+
+        async generateBulkNumbers(userId, vehicleType, brand, quantity) {
+          const generateBtn = document.getElementById('generateBtn')
+          const exportBtn = document.getElementById('exportBtn')
+          const progressContainer = document.getElementById('progressContainer')
+          const progressFill = document.getElementById('progressFill')
+          const progressText = document.getElementById('progressText')
+          const resultDiv = document.getElementById('result')
+
+          // Disable button dan show progress
+          generateBtn.disabled = true
+          generateBtn.textContent = 'Generating...'
+          exportBtn.style.display = 'none'
+          progressContainer.style.display = 'block'
+          resultDiv.style.display = 'none'
+
+          this.currentBatch = []
+          let successCount = 0
+
+          try {
+            // Generate nomor satu per satu dengan progress update
+            for (let i = 0; i < quantity; i++) {
+              try {
+                const chassisNumber = this.generateChassisNumber(vehicleType, brand, userId)
+                const engineNumber = this.generateEngineNumber(vehicleType, brand, userId)
+
+                // Simpan nomor yang sudah di-generate
+                this.storeGeneratedNumber(userId, chassisNumber, 'chassis')
+                this.storeGeneratedNumber(userId, engineNumber, 'engine')
+
+                this.currentBatch.push({
+                  no: i + 1,
+                  chassisNumber,
+                  engineNumber,
+                  vehicleType,
+                  brand,
+                  userId,
+                  timestamp: new Date(),
+                })
+
+                successCount++
+
+                // Update progress setiap 10 nomor atau di akhir
+                if (i % 10 === 0 || i === quantity - 1) {
+                  const progress = ((i + 1) / quantity) * 100
+                  progressFill.style.width = `${progress}%`
+                  progressText.textContent = `Generating... ${i + 1}/${quantity} (${Math.round(progress)}%)`
+
+                  // Give browser time to update UI
+                  await new Promise((resolve) => setTimeout(resolve, 1))
+                }
+              } catch (error) {
+                console.warn(`Failed to generate number ${i + 1}:`, error.message)
+              }
+            }
+
+            // Tambah ke history
+            this.history.unshift({
+              timestamp: new Date(),
+              userId,
+              vehicleType,
+              brand,
+              quantity: successCount,
+              type: 'bulk',
+            })
+
+            console.log(`Generated ${successCount} numbers successfully`)
+            console.log('Current batch:', this.currentBatch)
+
+            this.showBulkResult(successCount, quantity, vehicleType, brand)
+            this.updateHistory()
+            this.hideWarning()
+
+            if (successCount > 0) {
+              exportBtn.style.display = 'inline-block'
+            }
+          } catch (error) {
+            console.error('Error during bulk generation:', error)
+            this.showWarning(`Error during bulk generation: ${error.message}`)
+          } finally {
+            // Re-enable button dan hide progress
+            generateBtn.disabled = false
+            generateBtn.textContent = 'Generate Nomor'
+            progressContainer.style.display = 'none'
+          }
+        }
+
+        showSingleResult(chassisNumber, engineNumber, vehicleType, brand) {
+          const resultDiv = document.getElementById('result')
+          const vehicleTypeMap = {
+            car: 'Mobil',
+            motorcycle: 'Motor',
+            truck: 'Truk',
+            bus: 'Bus',
+          }
+
+          resultDiv.innerHTML = `
+                    <h3>✅ Nomor Berhasil Di-Generate</h3>
+                    <p><strong>Jenis Kendaraan:</strong> ${vehicleTypeMap[vehicleType]} - ${brand}</p>
+                    <div class="number-display">
+                        <strong>Nomor Rangka:</strong><br>${chassisNumber}
+                    </div>
+                    <div class="number-display">
+                        <strong>Nomor Mesin:</strong><br>${engineNumber}
+                    </div>
+                `
+          resultDiv.style.display = 'block'
+        }
+
+        showBulkResult(successCount, totalRequested, vehicleType, brand) {
+          const resultDiv = document.getElementById('result')
+          const vehicleTypeMap = {
+            car: 'Mobil',
+            motorcycle: 'Motor',
+            truck: 'Truk',
+            bus: 'Bus',
+          }
+
+          let resultHTML = `
+                    <h3>✅ Bulk Generate Selesai</h3>
+                    <p><strong>Jenis Kendaraan:</strong> ${vehicleTypeMap[vehicleType]} - ${brand}</p>
+                    <p><strong>Berhasil Generate:</strong> ${successCount} dari ${totalRequested} nomor</p>
+                `
+
+          if (successCount > 0 && this.currentBatch.length > 0) {
+            resultHTML += '<div class="bulk-result">'
+
+            // Tampilkan maksimal 20 nomor pertama untuk preview
+            const displayLimit = Math.min(20, this.currentBatch.length)
+
+            for (let i = 0; i < displayLimit; i++) {
+              const item = this.currentBatch[i]
+              resultHTML += `
+                            <div class="bulk-result-item">
+                                <strong>#${item.no}</strong><br>
+                                <small><strong>Rangka:</strong> ${item.chassisNumber}</small><br>
+                                <small><strong>Mesin:</strong> ${item.engineNumber}</small>
+                            </div>
+                        `
+            }
+
+            resultHTML += '</div>'
+
+            if (this.currentBatch.length > displayLimit) {
+              resultHTML += `<p style="text-align: center; margin-top: 20px;"><em>Dan ${this.currentBatch.length - displayLimit} nomor lainnya...<br>Klik <strong>Export ke CSV</strong> untuk melihat semua data</em></p>`
+            }
+          } else {
+            resultHTML += '<p style="color: red;">❌ Tidak ada nomor yang berhasil di-generate</p>'
+          }
+
+          resultDiv.innerHTML = resultHTML
+          resultDiv.style.display = 'block'
+        }
+
+        exportToCSV() {
+          if (this.currentBatch.length === 0) {
+            this.showWarning('Tidak ada data untuk di-export')
+            return
+          }
+
+          const vehicleTypeMap = {
+            car: 'Mobil',
+            motorcycle: 'Motor',
+            truck: 'Truk',
+            bus: 'Bus',
+          }
+
+          // Create CSV content
+          let csvContent =
+            'No,User ID,Jenis Kendaraan,Merk,Nomor Rangka,Nomor Mesin,Tanggal Generate\n'
+
+          this.currentBatch.forEach((item) => {
+            csvContent += `${item.no},"${item.userId}","${vehicleTypeMap[item.vehicleType]}","${item.brand}","${item.chassisNumber}","${item.engineNumber}","${item.timestamp.toLocaleString('id-ID')}"\n`
+          })
+
+          // Create and download file
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+          const link = document.createElement('a')
+          const url = URL.createObjectURL(blob)
+          link.setAttribute('href', url)
+          link.setAttribute(
+            'download',
+            `vehicle_numbers_${this.currentBatch[0].userId}_${Date.now()}.csv`,
+          )
+          link.style.visibility = 'hidden'
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        }
+
+        showWarning(message) {
+          const warningDiv = document.getElementById('warning')
+          warningDiv.innerHTML = `
+                    <div class="warning">
+                        <strong>⚠️ Peringatan:</strong> ${message}
+                    </div>
+                `
+          warningDiv.style.display = 'block'
+        }
+
+        hideWarning() {
+          document.getElementById('warning').style.display = 'none'
+        }
+
+        updateHistory() {
+          const historyDiv = document.getElementById('history')
+
+          if (this.history.length === 0) {
+            historyDiv.innerHTML = ''
+            return
+          }
+
+          const vehicleTypeMap = {
+            car: 'Mobil',
+            motorcycle: 'Motor',
+            truck: 'Truk',
+            bus: 'Bus',
+          }
+
+          let historyHTML = '<h3>📋 History Generate</h3>'
+
+          this.history.slice(0, 10).forEach((item) => {
+            if (item.type === 'bulk') {
+              historyHTML += `
+                            <div class="history-item">
+                                <strong>${item.userId}</strong> - Bulk Generate<br>
+                                <small>${vehicleTypeMap[item.vehicleType]} ${item.brand} - ${item.quantity} nomor</small><br>
+                                <small style="color: #666;">${item.timestamp.toLocaleString('id-ID')}</small>
+                            </div>
+                        `
+            } else {
+              historyHTML += `
+                            <div class="history-item">
+                                <strong>${item.userId}</strong> - ${vehicleTypeMap[item.vehicleType]} ${item.brand}<br>
+                                <small>Rangka: ${item.chassisNumber || 'N/A'} | Mesin: ${item.engineNumber || 'N/A'}</small><br>
+                                <small style="color: #666;">${item.timestamp.toLocaleString('id-ID')}</small>
+                            </div>
+                        `
+            }
+          })
+
+          historyDiv.innerHTML = historyHTML
+        }
+
+        // Method untuk mendapatkan statistik user
+        getUserStats(userId) {
+          if (!this.generatedNumbers[userId]) {
+            return { chassis: 0, engine: 0 }
+          }
+          return {
+            chassis: this.generatedNumbers[userId].chassis.size,
+            engine: this.generatedNumbers[userId].engine.size,
+          }
+        }
+      }
+
+      // Inisialisasi generator
+      const vehicleGenerator = new VehicleNumberGenerator()
+
+      // Fungsi untuk export (jika diperlukan)
+      window.VehicleNumberGenerator = VehicleNumberGenerator
+    </script>
+  </body>
+</html>
