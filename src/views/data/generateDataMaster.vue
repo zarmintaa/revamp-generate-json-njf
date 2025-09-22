@@ -141,8 +141,6 @@ const handleSubmit = async () => {
 
     // FIX: Pass filtered data to downloadHandler
     await downloadHandlerWithData(filteredFormData)
-
-
   } catch (error) {
     console.error('Submit error:', error)
     alert('Terjadi kesalahan saat menyimpan data')
@@ -346,14 +344,14 @@ const downloadHandlerWithData = async (dataToExport) => {
           </div>
 
           <div class="d-flex gap-2 mt-4">
+            <button type="button" @click="resetForm" class="btn btn-secondary">Reset</button>
+
+            <button type="button" @click="fillSampleData" class="btn btn-info">Sample Data</button>
+
             <button type="submit" class="btn btn-success" :disabled="isSubmitting">
               <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
               {{ isSubmitting ? 'Processing...' : 'Export' }}
             </button>
-
-            <button type="button" @click="resetForm" class="btn btn-secondary">Reset</button>
-
-            <button type="button" @click="fillSampleData" class="btn btn-info">Sample Data</button>
           </div>
         </form>
 
@@ -366,12 +364,23 @@ const downloadHandlerWithData = async (dataToExport) => {
     </div>
 
     <!-- Field Customizer Modal -->
-    <div class="modal fade" tabindex="-1" aria-hidden="true" id="setupCustomizeFields">
+    <div
+      class="modal fade"
+      tabindex="-1"
+      aria-hidden="true"
+      id="setupCustomizeFields"
+      aria-labelledby="setupCustomizeFields"
+    >
       <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Customize Form Fields</h5>
-            <button type="button" class="btn-close" @click="showFieldCustomizer = false"></button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
           </div>
           <div class="modal-body">
             <!-- Required Fields Section -->
@@ -381,7 +390,7 @@ const downloadHandlerWithData = async (dataToExport) => {
                 Required Fields ({{ requiredFields.length }}) - Always Displayed
               </h6>
               <div class="row">
-                <div v-for="field in requiredFields" :key="field.jsonKey" class="col-md-6 mb-2">
+                <div v-for="field in requiredFields" :key="field.jsonKey" class="col-md-4 mb-2">
                   <div class="form-check">
                     <input
                       :id="`req-${field.jsonKey}`"
@@ -425,7 +434,7 @@ const downloadHandlerWithData = async (dataToExport) => {
               </div>
 
               <div class="row max-height-300">
-                <div v-for="field in optionalFields" :key="field.jsonKey" class="col-md-6 mb-2">
+                <div v-for="field in optionalFields" :key="field.jsonKey" class="col-md-4 mb-2">
                   <div class="form-check">
                     <input
                       :id="`opt-${field.jsonKey}`"
