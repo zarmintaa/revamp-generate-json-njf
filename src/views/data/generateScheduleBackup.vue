@@ -7,7 +7,7 @@ import { computed, ref, watch } from 'vue'
 const principal = ref(25000000)
 const tenure = ref(24)
 const annualRate = ref(12)
-const calculationMethod = ref('annuity') // 'annuity' or 'flat'
+const calculationMethod = ref('annuity') // 'annuity' or 'flat' -> OPSI BARU
 const roundingOption = ref('thousand')
 
 const principalInput = ref(principal.value)
@@ -41,30 +41,13 @@ const roundAmount = (amount, option) => {
       return Math.round(amount / 1000) * 1000
     case 'ten-thousand':
       return Math.round(amount / 10000) * 10000
-    case 'none':
-      return amount
     default:
       return Math.round(amount) // Round to nearest integer by default
   }
 }
 
 // ==========================================================
-// --- PMT FUNCTION (Sesuai dengan Java) ---
-// ==========================================================
-const pmt = (rate, months, presentValue, type = false) => {
-  let result
-  if (rate === 0) {
-    result = -presentValue / months
-  } else {
-    const r1 = rate + 1
-    const opt = type ? r1 : 1
-    result = (presentValue * Math.pow(r1, months) * rate) / (opt * (1 - Math.pow(r1, months)))
-  }
-  return Math.abs(result)
-}
-
-// ==========================================================
-// --- ANNUITY CALCULATION (Sesuai dengan Java 30/360) ---
+// --- ANNUITY (EFFECTIVE RATE) CALCULATION ---
 // ==========================================================
 const annuityMonthlyRate = computed(() => annualRate.value / 100 / 12)
 
@@ -72,46 +55,42 @@ const annuityMonthlyPaymentRaw = computed(() => {
   const rate = annuityMonthlyRate.value
   const n = numPayments.value
   const p = principal.value
-  return pmt(rate, n, p, false)
+  if (rate === 0) return p / n
+  return (p * (rate * Math.pow(1 + rate, n))) / (Math.pow(1 + rate, n) - 1)
 })
 
 const annuityMonthlyPayment = computed(() => {
   return roundAmount(annuityMonthlyPaymentRaw.value, roundingOption.value)
 })
 
-// ANNUITY SCHEDULE - Menggunakan metode 30/360 seperti di Java
+// KODE PERBAIKAN UNTUK ANNUITY SCHEDULE
 const annuitySchedule = computed(() => {
   if (numPayments.value <= 0) return []
 
-  let outstanding = principal.value
+  let remainingBalance = principal.value
   const paymentSchedule = []
-  const installment = annuityMonthlyPaymentRaw.value
-  const lendingRate = annualRate.value / 100 // Convert percentage to decimal
-
   for (let month = 1; month <= numPayments.value; month++) {
-    // Interest calculation using 30/360 method (like Java)
-    const interest = outstanding * lendingRate * (30 / 360)
-
-    let principalPayment
-    let actualMonthlyPayment
+    // Gunakan 'none' atau pembulatan ke satuan terdekat untuk kalkulasi bunga internal
+    const interestPayment = roundAmount(remainingBalance * annuityMonthlyRate.value, 'none')
+    let principalPayment, actualMonthlyPayment
 
     if (month === numPayments.value) {
-      // Last payment: pay all remaining balance
-      principalPayment = outstanding
-      actualMonthlyPayment = principalPayment + interest
-      outstanding = 0
+      principalPayment = remainingBalance
+      actualMonthlyPayment = interestPayment + principalPayment
+      remainingBalance = 0
     } else {
-      actualMonthlyPayment = installment
-      principalPayment = actualMonthlyPayment - interest
-      outstanding = Math.max(0, outstanding - principalPayment)
+      actualMonthlyPayment = annuityMonthlyPayment.value
+      principalPayment = actualMonthlyPayment - interestPayment
+      remainingBalance = Math.max(0, remainingBalance - principalPayment)
     }
 
     paymentSchedule.push({
       month,
-      monthlyPayment: roundAmount(actualMonthlyPayment, roundingOption.value),
-      principalPayment: roundAmount(principalPayment, roundingOption.value),
-      interestPayment: roundAmount(interest, roundingOption.value),
-      remainingBalance: roundAmount(outstanding, roundingOption.value),
+      monthlyPayment: actualMonthlyPayment,
+      principalPayment,
+      interestPayment,
+      // PERBAIKAN: Bulatkan sisa pokok HANYA untuk tampilan di tabel
+      remainingBalance: roundAmount(remainingBalance, 'none'),
     })
   }
   return paymentSchedule
@@ -129,63 +108,64 @@ const annuitySummary = computed(() => {
 })
 
 // ==========================================================
-// --- FLAT RATE CALCULATION (Sesuai dengan Java) ---
+// --- FLAT RATE CALCULATION (LOGIKA BARU) ---
 // ==========================================================
+const flatPrincipalPerMonth = computed(() => {
+  if (numPayments.value === 0) return 0
+  return principal.value / numPayments.value
+})
+const flatInterestPerMonth = computed(() => {
+  return (principal.value * (annualRate.value / 100)) / 12
+})
+const flatMonthlyPayment = computed(() => {
+  return flatPrincipalPerMonth.value + flatInterestPerMonth.value
+})
+
 const flatSchedule = computed(() => {
   if (numPayments.value <= 0) return []
 
-  // Sesuai dengan Java: flatCalculate method
-  const tenor = numPayments.value
-  const principalAmount = principal.value
-  const interestRate = annualRate.value / 100 // Convert to decimal
-
-  // Principal per month
-  const principalFlat = Math.round(principalAmount / tenor)
-
-  // Interest per month (flat calculation from Java)
-  const interestFlat = Math.round((principalAmount * interestRate * (tenor / 12)) / tenor)
-
-  // Total installment per month
-  const installmentFlat = principalFlat + interestFlat
-
-  let remainingPrincipal = principalAmount
+  let remainingBalance = principal.value
   const paymentSchedule = []
 
-  for (let month = 1; month <= tenor; month++) {
+  // Hitung pembayaran pokok dan bunga yang sudah dibulatkan sebagai dasar
+  const roundedPrincipalPayment = roundAmount(flatPrincipalPerMonth.value, roundingOption.value)
+  const roundedInterestPayment = roundAmount(flatInterestPerMonth.value, roundingOption.value)
+
+  for (let month = 1; month <= numPayments.value; month++) {
     let principalForThisMonth
     let monthlyPaymentForThisMonth
 
-    if (month === tenor) {
-      // Last payment: pay all remaining principal
-      principalForThisMonth = remainingPrincipal
-      monthlyPaymentForThisMonth = principalForThisMonth + interestFlat
-      remainingPrincipal = 0
+    if (month === numPayments.value) {
+      // Untuk angsuran TERAKHIR, lunasi semua sisa pokoknya.
+      principalForThisMonth = remainingBalance
+      monthlyPaymentForThisMonth = principalForThisMonth + roundedInterestPayment
     } else {
-      principalForThisMonth = principalFlat
-      monthlyPaymentForThisMonth = installmentFlat
-      remainingPrincipal = Math.max(0, remainingPrincipal - principalForThisMonth)
+      // Untuk angsuran normal, gunakan angka yang sudah dibulatkan.
+      principalForThisMonth = roundedPrincipalPayment
+      monthlyPaymentForThisMonth = roundedPrincipalPayment + roundedInterestPayment
     }
+
+    // Kurangi sisa pokok dengan pembayaran pokok bulan ini
+    remainingBalance = Math.max(0, remainingBalance - principalForThisMonth)
 
     paymentSchedule.push({
       month,
-      monthlyPayment: roundAmount(monthlyPaymentForThisMonth, roundingOption.value),
-      principalPayment: roundAmount(principalForThisMonth, roundingOption.value),
-      interestPayment: roundAmount(interestFlat, roundingOption.value),
-      remainingBalance: roundAmount(remainingPrincipal, roundingOption.value),
+      monthlyPayment: monthlyPaymentForThisMonth,
+      principalPayment: principalForThisMonth,
+      interestPayment: roundedInterestPayment,
+      remainingBalance: remainingBalance,
     })
   }
-
   return paymentSchedule
 })
 
 const flatSummary = computed(() => {
-  const totalInterest = flatSchedule.value.reduce((sum, p) => sum + p.interestPayment, 0)
-  const totalPayment = flatSchedule.value.reduce((sum, p) => sum + p.monthlyPayment, 0)
-
+  const totalInterest = flatInterestPerMonth.value * numPayments.value
+  const totalPayment = principal.value + totalInterest
   return {
-    monthlyPayment: flatSchedule.value.length > 0 ? flatSchedule.value[0].monthlyPayment : 0,
-    totalPayment,
-    totalInterest,
+    monthlyPayment: roundAmount(flatMonthlyPayment.value, roundingOption.value),
+    totalPayment: roundAmount(totalPayment, roundingOption.value),
+    totalInterest: roundAmount(totalInterest, roundingOption.value),
     totalPrincipal: principal.value,
   }
 })
@@ -251,7 +231,7 @@ const downloadHandler = async () => {
               <div class="col-md-3">
                 <label class="form-label fw-semibold">Metode Perhitungan Bunga</label>
                 <select class="form-select" v-model="calculationMethod">
-                  <option value="annuity">Anuitas (30/360)</option>
+                  <option value="annuity">Anuitas (Bunga Efektif)</option>
                   <option value="flat">Flat</option>
                 </select>
               </div>
@@ -348,16 +328,16 @@ const downloadHandler = async () => {
           <div class="card-header">
             <h5 class="card-title mb-0">
               Penjelasan Logic: Metode
-              {{ calculationMethod === 'annuity' ? 'Anuitas (30/360)' : 'Flat' }}
+              {{ calculationMethod === 'annuity' ? 'Anuitas (Efektif)' : 'Flat' }}
             </h5>
           </div>
           <div class="card-body">
             <div v-if="calculationMethod === 'annuity'" class="row g-4">
               <div class="col-md-6">
-                <h6 class="fw-bold text-primary">1. Metode Anuitas (30/360)</h6>
+                <h6 class="fw-bold text-primary">1. Metode Anuitas</h6>
                 <p class="text-muted">
-                  Menggunakan sistem angsuran tetap bulanan dengan metode perhitungan bunga 30/360
-                  (setiap bulan = 30 hari, setahun = 360 hari) sesuai standard perbankan.
+                  Menggunakan sistem angsuran tetap bulanan dimana jumlah angsuran sama setiap
+                  bulan, namun komposisi pokok dan bunga berubah.
                 </p>
 
                 <h6 class="fw-bold text-primary">2. Rumus PMT (Payment)</h6>
@@ -372,18 +352,18 @@ const downloadHandler = async () => {
               </div>
 
               <div class="col-md-6">
-                <h6 class="fw-bold text-primary">3. Perhitungan Per Bulan (30/360)</h6>
+                <h6 class="fw-bold text-primary">3. Perhitungan Per Bulan</h6>
                 <ul class="text-muted">
-                  <li><strong>Bunga Bulanan:</strong> Outstanding × rate tahunan × (30/360)</li>
+                  <li><strong>Bunga Bulanan:</strong> Sisa pokok × rate bulanan</li>
                   <li><strong>Pokok Bulanan:</strong> Total angsuran - bunga bulanan</li>
-                  <li><strong>Outstanding:</strong> Outstanding sebelumnya - pokok bulanan</li>
+                  <li><strong>Sisa Pokok:</strong> Sisa pokok sebelumnya - pokok bulanan</li>
                 </ul>
 
                 <h6 class="fw-bold text-primary">4. Karakteristik</h6>
                 <ul class="text-muted">
-                  <li>Cicilan bulanan tetap (kecuali bulan terakhir)</li>
-                  <li>Porsi bunga menurun, porsi pokok meningkat</li>
-                  <li>Menggunakan standard perbankan 30/360</li>
+                  <li>Di awal tenor, porsi bunga lebih besar dari pokok</li>
+                  <li>Seiring waktu, porsi pokok bertambah dan bunga berkurang</li>
+                  <li>Total angsuran bulanan selalu sama</li>
                 </ul>
               </div>
             </div>
@@ -392,25 +372,21 @@ const downloadHandler = async () => {
               <div class="col-md-6">
                 <h6 class="fw-bold text-primary">1. Metode Flat</h6>
                 <p class="text-muted">
-                  Bunga dihitung dari pokok pinjaman awal dan dibagi rata ke seluruh tenor. Porsi
-                  pokok dan bunga tetap setiap bulan.
+                  Angsuran bulanan tetap dengan porsi pokok dan bunga yang juga selalu tetap. Bunga
+                  dihitung dari pokok pinjaman awal.
                 </p>
-
-                <h6 class="fw-bold text-primary">2. Rumus Flat</h6>
+                <h6 class="fw-bold text-primary">2. Karakteristik</h6>
                 <ul class="text-muted">
-                  <li><strong>Pokok/Bulan:</strong> Total Pokok ÷ Tenor</li>
-                  <li><strong>Bunga/Bulan:</strong> (Pokok × Rate × Tenor/12) ÷ Tenor</li>
-                  <li><strong>Angsuran:</strong> Pokok/Bulan + Bunga/Bulan</li>
+                  <li>Jumlah bunga per bulan selalu sama.</li>
+                  <li>Jumlah pokok per bulan selalu sama.</li>
                 </ul>
               </div>
-
               <div class="col-md-6">
-                <h6 class="fw-bold text-primary">3. Karakteristik</h6>
+                <h6 class="fw-bold text-primary">3. Rumus Sederhana</h6>
                 <ul class="text-muted">
-                  <li>Jumlah bunga per bulan selalu sama</li>
-                  <li>Jumlah pokok per bulan selalu sama</li>
-                  <li>Angsuran bulanan tetap (kecuali bulan terakhir)</li>
-                  <li>Total bunga lebih tinggi dari metode anuitas</li>
+                  <li><strong>Pokok/Bulan:</strong> Total Pokok ÷ Tenor</li>
+                  <li><strong>Bunga/Bulan:</strong> (Total Pokok × Rate Tahunan) ÷ 12</li>
+                  <li><strong>Angsuran:</strong> Pokok/Bulan + Bunga/Bulan</li>
                 </ul>
               </div>
             </div>
@@ -422,6 +398,7 @@ const downloadHandler = async () => {
 </template>
 
 <style scoped>
+/* Style Anda sudah bagus, tidak ada perubahan yang diperlukan */
 .card {
   border: none;
   border-radius: 12px;
