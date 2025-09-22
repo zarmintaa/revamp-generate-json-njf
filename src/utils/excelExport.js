@@ -1,7 +1,8 @@
-// utils/excelExport.js - Untuk Vue.js
+// utils/excelExport.js - Untuk Vue.js (FIXED VERSION)
 // Install: npm install exceljs
 
 import * as ExcelJS from 'exceljs'
+import { useToast } from '@/composables/useToast.js'
 
 /**
  * Export data ke Excel untuk Vue.js
@@ -32,33 +33,42 @@ export async function exportToExcel(data, filename = 'export', sheetName = 'Shee
 
     // Set header columns
     worksheet.columns = headers.map((header) => ({
-      header: options.headerMapping?.[header] || header.toUpperCase(), //.replace(/_/g, ' '),
+      header: options.headerMapping?.[header] || header.toUpperCase(),
       key: header,
       width: options.columnWidth || 15,
     }))
 
-    // Style untuk header
+    // FIXED: Style untuk header - hanya untuk kolom yang memiliki data
     const headerRow = worksheet.getRow(1)
-    headerRow.font = { bold: true, color: { argb: 'FFFFFF' } }
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: options.headerColor || '366092' },
-    }
-    headerRow.alignment = { horizontal: 'center', vertical: 'middle' }
+
+    // Style hanya untuk cell yang memiliki header (bukan seluruh row)
+    headers.forEach((header, index) => {
+      const cell = headerRow.getCell(index + 1) // Excel columns start from 1
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: options.headerColor || '366092' },
+      }
+      cell.alignment = { horizontal: 'center', vertical: 'middle' }
+    })
+
     headerRow.height = options.headerHeight || 25
 
     // Add data rows
     data.forEach((item, index) => {
       const row = worksheet.addRow(item)
 
-      // Alternating row colors
+      // Alternating row colors - hanya untuk kolom dengan data
       if (options.alternateRows && index % 2 === 1) {
-        row.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: options.alternateColor || 'F2F2F2' },
-        }
+        headers.forEach((header, colIndex) => {
+          const cell = row.getCell(colIndex + 1)
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: options.alternateColor || 'F2F2F2' },
+          }
+        })
       }
 
       // Set row height
@@ -81,7 +91,7 @@ export async function exportToExcel(data, filename = 'export', sheetName = 'Shee
       })
     }
 
-    // Add borders ke semua cells
+    // FIXED: Add borders ke semua cells - hanya untuk area dengan data
     if (options.addBorders !== false) {
       const borderStyle = {
         top: { style: 'thin', color: { argb: '000000' } },
@@ -90,12 +100,15 @@ export async function exportToExcel(data, filename = 'export', sheetName = 'Shee
         right: { style: 'thin', color: { argb: '000000' } },
       }
 
-      worksheet.eachRow((row, rowNumber) => {
-        row.eachCell((cell, colNumber) => {
+      // Apply borders only to data area (headers + data rows)
+      for (let rowIndex = 1; rowIndex <= data.length + 1; rowIndex++) {
+        const row = worksheet.getRow(rowIndex)
+        headers.forEach((header, colIndex) => {
+          const cell = row.getCell(colIndex + 1)
           cell.border = borderStyle
           cell.alignment = { vertical: 'middle' }
         })
-      })
+      }
     }
 
     // Freeze header row jika diminta
@@ -103,11 +116,12 @@ export async function exportToExcel(data, filename = 'export', sheetName = 'Shee
       worksheet.views = [{ state: 'frozen', ySplit: 1 }]
     }
 
-    // Add filter ke header
+    // Add filter ke header - hanya untuk area dengan data
     if (options.addFilter) {
+      const lastColumn = String.fromCharCode(64 + headers.length)
       worksheet.autoFilter = {
         from: 'A1',
-        to: `${String.fromCharCode(64 + headers.length)}1`,
+        to: `${lastColumn}1`,
       }
     }
 
@@ -190,30 +204,36 @@ export async function exportMultipleSheets(sheetsData, filename = 'multi_export'
         width: options.columnWidth || 15,
       }))
 
-      // Style header
+      // FIXED: Style header - hanya untuk kolom dengan data
       const headerRow = worksheet.getRow(1)
-      headerRow.font = { bold: true, color: { argb: 'FFFFFF' } }
-      headerRow.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: options.headerColor || '366092' },
-      }
-      headerRow.alignment = { horizontal: 'center', vertical: 'middle' }
+      headers.forEach((header, index) => {
+        const cell = headerRow.getCell(index + 1)
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } }
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: options.headerColor || '366092' },
+        }
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+      })
 
       // Add data
       data.forEach((item, index) => {
         const row = worksheet.addRow(item)
 
         if (options.alternateRows && index % 2 === 1) {
-          row.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: options.alternateColor || 'F2F2F2' },
-          }
+          headers.forEach((header, colIndex) => {
+            const cell = row.getCell(colIndex + 1)
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: options.alternateColor || 'F2F2F2' },
+            }
+          })
         }
       })
 
-      // Add borders
+      // FIXED: Add borders - hanya untuk area dengan data
       if (options.addBorders !== false) {
         const borderStyle = {
           top: { style: 'thin' },
@@ -222,11 +242,13 @@ export async function exportMultipleSheets(sheetsData, filename = 'multi_export'
           right: { style: 'thin' },
         }
 
-        worksheet.eachRow((row) => {
-          row.eachCell((cell) => {
+        for (let rowIndex = 1; rowIndex <= data.length + 1; rowIndex++) {
+          const row = worksheet.getRow(rowIndex)
+          headers.forEach((header, colIndex) => {
+            const cell = row.getCell(colIndex + 1)
             cell.border = borderStyle
           })
-        })
+        }
       }
     }
 
@@ -254,6 +276,11 @@ export async function exportMultipleSheets(sheetsData, filename = 'multi_export'
  * @param {Array} excludeFields - Fields yang tidak ingin di-export
  */
 export function formatDataForExport(rawData, fieldMapping = {}, excludeFields = []) {
+  const toast = useToast()
+  if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
+    toast.error('Error Export Data', 'formatDataForExport: rawData is empty or not an array')
+    return []
+  }
   return rawData.map((item) => {
     const formatted = {}
 
@@ -271,10 +298,6 @@ export function formatDataForExport(rawData, fieldMapping = {}, excludeFields = 
       if (value instanceof Date) {
         value = value.toLocaleDateString('id-ID')
       }
-      // Format numbers
-      // else if (typeof value === 'number' && value > 1000) {
-      //   value = value.toLocaleString('id-ID')
-      // }
       // Handle null/undefined
       else if (value === null || value === undefined) {
         value = ''
