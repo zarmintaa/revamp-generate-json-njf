@@ -34,20 +34,26 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
+const roundHalfUp = (num, decimals = 0) => {
+  const multiplier = Math.pow(10, decimals);
+  return Math.floor(num * multiplier + 0.5) / multiplier;
+}
+
 const roundAmount = (amount, option) => {
   switch (option) {
     case 'hundred':
-      return Math.round(amount / 100) * 100
+      return roundHalfUp(amount / 100) * 100
     case 'thousand':
-      return Math.round(amount / 1000) * 1000
+      return roundHalfUp(amount / 1000) * 1000
     case 'ten-thousand':
-      return Math.round(amount / 10000) * 10000
+      return roundHalfUp(amount / 10000) * 10000
     case 'none':
-      return amount
+      return Math.round(amount)
     default:
-      return Math.round(amount) // Round to nearest integer by default
+      return roundHalfUp(amount)
   }
 }
+
 
 // ==========================================================
 // --- PMT FUNCTION  ---
@@ -203,7 +209,7 @@ const finalSummary = computed(() => {
 
 // --- EXCEL EXPORT ---
 const downloadHandler = async () => {
-  const fileName = `simulasi_${calculationMethod.value}_${tenure.value}bln_${annualRate.value}persen.xlsx`
+  const fileName = `simulasi_${calculationMethod.value}_${tenure.value}bln_${annualRate.value}persen_${new Date().toISOString()}.xlsx`
   const data = await exportToExcel(formatDataForExport(finalSchedule.value), fileName)
   downloadExcelFile(data.buffer, fileName)
 }
