@@ -410,7 +410,7 @@ const downloadHandler = async () => {
                 <ul class="text-muted">
                   <li>Jumlah bunga per bulan selalu sama</li>
                   <li>Jumlah pokok per bulan selalu sama</li>
-                  <li>Angsuran bulanan tetap (kecuali bulan terakhir)</li>
+                  <li>Angsuran bulanan tetap</li>
                   <li>Total bunga lebih tinggi dari metode anuitas</li>
                 </ul>
               </div>
