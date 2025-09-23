@@ -7,7 +7,7 @@ import { computed, ref, watch } from 'vue'
 const principal = ref(25000000)
 const tenure = ref(24)
 const annualRate = ref(12)
-const calculationMethod = ref('annuity') // 'annuity' or 'flat'
+const calculationMethod = ref('annuity') // 'annuity', 'flat', 'ar-schedule', 'ap-schedule'
 const roundingOption = ref('thousand')
 
 const principalInput = ref(principal.value)
@@ -192,13 +192,156 @@ const flatSummary = computed(() => {
 })
 
 // ==========================================================
+// --- AR SCHEDULE (Contractual Flow - Customer to Leasing) ---
+// ==========================================================
+const arSchedule = computed(() => {
+  if (numPayments.value <= 0) return []
+
+  let outstanding = principal.value
+  const paymentSchedule = []
+  const monthlyRate = annualRate.value / 100 / 12
+
+  // Calculate base installment using PMT formula
+  const baseInstallment = pmt(monthlyRate, numPayments.value, principal.value, false)
+
+  // AR Schedule characteristic: Higher principal payment at the beginning
+  // We'll use a declining balance approach but with adjusted principal/interest ratio
+
+  for (let month = 1; month <= numPayments.value; month++) {
+    // Calculate standard interest
+    const standardInterest = outstanding * monthlyRate
+
+    // AR Schedule adjustment: Reduce interest portion, increase principal portion
+    // This creates the "pokok lebih besar diawal" characteristic
+    const interestReductionFactor = 0.6 // Reduce interest by 40%
+    const interest = standardInterest * interestReductionFactor
+
+    let principalPayment
+    let actualMonthlyPayment
+
+    if (month === numPayments.value) {
+      // Last payment: pay all remaining balance
+      principalPayment = outstanding
+      actualMonthlyPayment = principalPayment + interest
+      outstanding = 0
+    } else {
+      // Higher principal payment in early months
+      principalPayment = baseInstallment - interest
+      actualMonthlyPayment = baseInstallment
+      outstanding = Math.max(0, outstanding - principalPayment)
+    }
+
+    paymentSchedule.push({
+      month,
+      monthlyPayment: roundAmount(actualMonthlyPayment, roundingOption.value),
+      principalPayment: roundAmount(principalPayment, roundingOption.value),
+      interestPayment: roundAmount(interest, roundingOption.value),
+      remainingBalance: roundAmount(outstanding, roundingOption.value),
+    })
+  }
+
+  return paymentSchedule
+})
+
+const arSummary = computed(() => {
+  const totalInterest = arSchedule.value.reduce((sum, p) => sum + p.interestPayment, 0)
+  const totalPayment = arSchedule.value.reduce((sum, p) => sum + p.monthlyPayment, 0)
+
+  return {
+    monthlyPayment: arSchedule.value.length > 0 ? arSchedule.value[0].monthlyPayment : 0,
+    totalPayment,
+    totalInterest,
+    totalPrincipal: principal.value,
+  }
+})
+
+// ==========================================================
+// --- AP SCHEDULE (Cash Flow to Bank - Leasing to Bank) ---
+// ==========================================================
+const apSchedule = computed(() => {
+  if (numPayments.value <= 0) return []
+
+  let outstanding = principal.value
+  const paymentSchedule = []
+  const monthlyRate = annualRate.value / 100 / 12
+
+  // Calculate base installment using PMT formula
+  const baseInstallment = pmt(monthlyRate, numPayments.value, principal.value, false)
+
+  // AP Schedule characteristic: Higher interest payment at the beginning (standard annuity)
+  // This is the traditional declining balance method
+
+  for (let month = 1; month <= numPayments.value; month++) {
+    // Standard declining balance calculation
+    const interest = outstanding * monthlyRate
+
+    let principalPayment
+    let actualMonthlyPayment
+
+    if (month === numPayments.value) {
+      // Last payment: pay all remaining balance
+      principalPayment = outstanding
+      actualMonthlyPayment = principalPayment + interest
+      outstanding = 0
+    } else {
+      actualMonthlyPayment = baseInstallment
+      principalPayment = actualMonthlyPayment - interest
+      outstanding = Math.max(0, outstanding - principalPayment)
+    }
+
+    paymentSchedule.push({
+      month,
+      monthlyPayment: roundAmount(actualMonthlyPayment, roundingOption.value),
+      principalPayment: roundAmount(principalPayment, roundingOption.value),
+      interestPayment: roundAmount(interest, roundingOption.value),
+      remainingBalance: roundAmount(outstanding, roundingOption.value),
+    })
+  }
+
+  return paymentSchedule
+})
+
+const apSummary = computed(() => {
+  const totalInterest = apSchedule.value.reduce((sum, p) => sum + p.interestPayment, 0)
+  const totalPayment = apSchedule.value.reduce((sum, p) => sum + p.monthlyPayment, 0)
+
+  return {
+    monthlyPayment: apSchedule.value.length > 0 ? apSchedule.value[0].monthlyPayment : 0,
+    totalPayment,
+    totalInterest,
+    totalPrincipal: principal.value,
+  }
+})
+
+// ==========================================================
 // --- LOGIC SWITCH (PENGGABUNGAN) ---
 // ==========================================================
 const finalSchedule = computed(() => {
-  return calculationMethod.value === 'flat' ? flatSchedule.value : annuitySchedule.value
+  switch (calculationMethod.value) {
+    case 'flat':
+      return flatSchedule.value
+    case 'ar-schedule':
+      return arSchedule.value
+    case 'ap-schedule':
+      return apSchedule.value
+    case 'annuity':
+    default:
+      return annuitySchedule.value
+  }
 })
+
 const finalSummary = computed(() => {
-  return calculationMethod.value === 'flat' ? flatSummary.value : annuitySummary.value
+  switch (calculationMethod.value) {
+    case 'flat':
+      return flatSummary.value
+    case 'ar-schedule':
+      return arSummary.value
+    case 'ap-schedule':
+      return apSummary.value
+    case 'annuity':
+    default:
+      return annuitySummary.value
+  }
 })
 
 // --- EXCEL EXPORT ---
@@ -207,6 +350,22 @@ const downloadHandler = async () => {
   const data = await exportToExcel(formatDataForExport(finalSchedule.value), fileName)
   downloadExcelFile(data.buffer, fileName)
 }
+
+// Method description helper
+const getMethodDescription = computed(() => {
+  switch (calculationMethod.value) {
+    case 'annuity':
+      return 'Anuitas (30/360)'
+    case 'flat':
+      return 'Flat'
+    case 'ar-schedule':
+      return 'AR Schedule (Nasabah ke Leasing)'
+    case 'ap-schedule':
+      return 'AP Schedule (Leasing ke Bank)'
+    default:
+      return 'Unknown'
+  }
+})
 </script>
 
 <template>
@@ -218,7 +377,7 @@ const downloadHandler = async () => {
             <h1 class="card-title text-center mb-4">Simulasi Kartu Piutang Nasabah</h1>
 
             <div class="row g-3 mb-4 align-items-end">
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label class="form-label fw-semibold">Pokok Pinjaman</label>
                 <input
                     type="number"
@@ -228,7 +387,7 @@ const downloadHandler = async () => {
                 />
               </div>
 
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label class="form-label fw-semibold">Tenor (Bulan)</label>
                 <input
                     type="number"
@@ -238,7 +397,7 @@ const downloadHandler = async () => {
                 />
               </div>
 
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label class="form-label fw-semibold">Rate Tahunan (%)</label>
                 <input
                     type="number"
@@ -249,11 +408,23 @@ const downloadHandler = async () => {
                 />
               </div>
 
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Metode Perhitungan Bunga</label>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Metode Perhitungan</label>
                 <select class="form-select" v-model="calculationMethod">
                   <option value="annuity">Anuitas (30/360)</option>
                   <option value="flat">Flat</option>
+                  <option value="ar-schedule">AR Schedule (Nasabah ke Leasing)</option>
+                  <option value="ap-schedule">AP Schedule (Leasing ke Bank)</option>
+                </select>
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label fw-semibold">Pembulatan</label>
+                <select class="form-select" v-model="roundingOption">
+                  <option value="none">Tanpa Pembulatan</option>
+                  <option value="hundred">Ratusan</option>
+                  <option value="thousand">Ribuan</option>
+                  <option value="ten-thousand">Puluh Ribu</option>
                 </select>
               </div>
             </div>
@@ -308,7 +479,7 @@ const downloadHandler = async () => {
 
         <div class="card shadow-sm">
           <div class="card-header d-flex align-items-center justify-content-between">
-            <h5 class="card-title fw-medium mb-0">Jadwal Angsuran</h5>
+            <h5 class="card-title fw-medium mb-0">Jadwal Angsuran - {{ getMethodDescription }}</h5>
             <button type="button" class="btn btn-outline-primary" @click="downloadHandler">
               Download Excel
             </button>
@@ -348,8 +519,7 @@ const downloadHandler = async () => {
         <div class="card shadow-sm mt-4">
           <div class="card-header">
             <h5 class="card-title mb-0">
-              Penjelasan Logic: Metode
-              {{ calculationMethod === 'annuity' ? 'Anuitas (30/360)' : 'Flat' }}
+              Penjelasan Logic: {{ getMethodDescription }}
             </h5>
           </div>
           <div class="card-body">
@@ -415,6 +585,70 @@ const downloadHandler = async () => {
                 </ul>
               </div>
             </div>
+
+            <div v-if="calculationMethod === 'ar-schedule'" class="row g-4">
+              <div class="col-md-6">
+                <h6 class="fw-bold text-primary">1. AR Schedule (Contractual Flow)</h6>
+                <p class="text-muted">
+                  <strong>Nasabah ke Leasing:</strong> Perhitungan jadwal pembayaran nasabah kepada perusahaan leasing.
+                  Karakteristik utama adalah porsi pokok lebih besar di awal periode.
+                </p>
+
+                <h6 class="fw-bold text-primary">2. Metode Perhitungan</h6>
+                <ul class="text-muted">
+                  <li><strong>Base PMT:</strong> Menggunakan rumus PMT standar</li>
+                  <li><strong>Interest Reduction:</strong> Bunga dikurangi ~40%</li>
+                  <li><strong>Principal Increase:</strong> Pokok diperbesar di awal</li>
+                </ul>
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="fw-bold text-primary">3. Karakteristik AR Schedule</h6>
+                <ul class="text-muted">
+                  <li>Pokok pembayaran lebih besar di bulan-bulan awal</li>
+                  <li>Beban bunga relatif lebih rendah di awal</li>
+                  <li>Cocok untuk cash flow nasabah yang baik di awal</li>
+                  <li>Total bunga lebih rendah dibanding AP Schedule</li>
+                </ul>
+
+                <h6 class="fw-bold text-primary">4. Penggunaan</h6>
+                <p class="text-muted">
+                  Digunakan untuk menghitung kontrak pembayaran dari nasabah ke perusahaan leasing.
+                </p>
+              </div>
+            </div>
+
+            <div v-if="calculationMethod === 'ap-schedule'" class="row g-4">
+              <div class="col-md-6">
+                <h6 class="fw-bold text-primary">1. AP Schedule (Cash Flow to Bank)</h6>
+                <p class="text-muted">
+                  <strong>Leasing ke Bank:</strong> Perhitungan jadwal pembayaran perusahaan leasing kepada bank.
+                  Menggunakan metode declining balance standar dengan bunga lebih besar di awal.
+                </p>
+
+                <h6 class="fw-bold text-primary">2. Metode Perhitungan</h6>
+                <ul class="text-muted">
+                  <li><strong>Declining Balance:</strong> Standard anuitas</li>
+                  <li><strong>Bunga Bulanan:</strong> Outstanding × rate bulanan</li>
+                  <li><strong>Pokok:</strong> PMT - Bunga</li>
+                </ul>
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="fw-bold text-primary">3. Karakteristik AP Schedule</h6>
+                <ul class="text-muted">
+                  <li>Bunga lebih besar di bulan-bulan awal</li>
+                  <li>Pokok pembayaran kecil di awal, besar di akhir</li>
+                  <li>Sesuai dengan skema pembiayaan bank standard</li>
+                  <li>Total bunga sesuai dengan perhitungan declining balance</li>
+                </ul>
+
+                <h6 class="fw-bold text-primary">4. Penggunaan</h6>
+                <p class="text-muted">
+                  Digunakan untuk menghitung kewajiban pembayaran perusahaan leasing kepada bank pemberi pinjaman.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -428,6 +662,7 @@ const downloadHandler = async () => {
   border-radius: 12px;
 }
 .card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 12px 12px 0 0 !important;
 }
