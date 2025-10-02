@@ -111,7 +111,7 @@ export const transactionMapper = (
       transform.aitCode,
       transform.lineGt,
       contNo,
-      docNoApp.value,
+      docNoApp,
       formatDate(dateTransaction),
       '000',
       contractUploaded.instalment ||

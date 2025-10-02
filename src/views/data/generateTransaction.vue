@@ -150,14 +150,17 @@ const generateTransactions = () => {
     docNoApp.value = ref(Utils.generateDocNoApp('A'))
 
     uploadedContracts.value.forEach((contract) => {
+      const docNoAppTransaction = Utils.generateDocNoApp('A')
+      // console.log('Loop contract ' + docNoAppTransaction)
       transforms.forEach((transform) => {
         let dataTransform = null
+        // console.log('Loop mapper ' + docNoAppTransaction)
         dataTransform = transactionMapper(
           contract,
           transform,
           getContractNumber(contract),
           instalment.value,
-          docNoApp.value,
+          docNoAppTransaction,
           dateTransaction.value,
           amountPokok.value,
           amountBunga.value,
