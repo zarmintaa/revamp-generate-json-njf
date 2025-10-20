@@ -24,8 +24,8 @@ const copySuccess = ref(false)
 // Reset form
 const resetForm = () => {
   formData.value = {
-    apiUrl: 'Url get token',
-    authorization: 'Basic / Bearer',
+    apiUrl: '',
+    authorization: '',
     username: '',
     password: '',
     client_id: '',
