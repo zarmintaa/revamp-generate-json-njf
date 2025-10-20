@@ -251,7 +251,7 @@ export const allFieldMapping = [
     njfKey: 'JF_CHANNEL',
     jsonKey: 'FUND_CHANNEL',
     type: 'STRING',
-    isRequired: false,
+    isRequired: true,
     description: 'Channel AIT',
   },
   {
@@ -587,7 +587,7 @@ export const allFieldMapping = [
     njfKey: 'JF_PORTFOLIO',
     jsonKey: 'FUND_PORTFOLIO',
     type: 'STRING',
-    isRequired: false,
+    isRequired: true,
     description: 'Portofolio Jurnal',
   },
   {
@@ -601,14 +601,14 @@ export const allFieldMapping = [
     njfKey: 'JF_PRODUCT_MATRIX',
     jsonKey: 'FUND_PRODUCT_MATRIX',
     type: 'STRING',
-    isRequired: false,
+    isRequired: true,
     description: 'Kode Product Metrix',
   },
   {
     njfKey: 'JF_PROGRAM',
     jsonKey: 'FUND_PROGRAM',
     type: 'STRING',
-    isRequired: false,
+    isRequired: true,
     description: 'Tipe Program',
   },
   {

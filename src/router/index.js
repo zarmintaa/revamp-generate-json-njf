@@ -141,6 +141,12 @@ const router = createRouter({
           meta: { title: 'Profile' },
         },
         {
+          path: 'push-ppd',
+          name: 'push-ppd',
+          component: () => import('@/views/integration/PushPpd.vue'),
+          meta: { title: 'Push PPD' },
+        },
+        {
           path: 'team',
           name: 'team',
           component: () => import('@/views/team/index.vue'),
