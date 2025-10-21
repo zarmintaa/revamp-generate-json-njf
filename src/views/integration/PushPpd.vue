@@ -114,7 +114,6 @@ const copyToken = async () => {
           >
             Get Credentials
           </button>
-          <button type="button" class="btn btn-outline-primary">Create Bulk</button>
         </div>
       </div>
     </div>
@@ -169,7 +168,7 @@ const copyToken = async () => {
                     class="form-control"
                     id="apiUrl"
                     v-model="formData.apiUrl"
-                    placeholder="https://sso-uat.com/auth/realms/internal/protocol/openid-connect/token"
+                    placeholder="Your API Url"
                     :disabled="loading"
                     required
                   />
@@ -183,7 +182,7 @@ const copyToken = async () => {
                     class="form-control font-monospace"
                     id="authorization"
                     v-model="formData.authorization"
-                    placeholder="Basic bmV3amY6M3p3c1hQMTBEVDBPTmdU234JQZmxCOWljZWFCdHhwe12="
+                    placeholder="Authorization method"
                     rows="2"
                     :disabled="loading"
                     required
