@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue'
-import { useRoute } from 'vue-router'
+import {ref} from 'vue'
+import {useRoute} from 'vue-router'
 
 const route = useRoute()
 const title = route.meta?.title || 'Push PPD'
@@ -8,11 +8,8 @@ const title = route.meta?.title || 'Push PPD'
 // Form data
 const formData = ref({
   apiUrl: 'Url get token',
-  authorization: 'Basic / Bearer',
   username: '',
   password: '',
-  client_id: '',
-  grant_type: 'password',
 })
 
 // State management
@@ -25,11 +22,8 @@ const copySuccess = ref(false)
 const resetForm = () => {
   formData.value = {
     apiUrl: '',
-    authorization: '',
     username: '',
     password: '',
-    client_id: '',
-    grant_type: 'password',
   }
   error.value = ''
   tokenData.value = null
@@ -43,8 +37,8 @@ const getCredentials = async () => {
     return
   }
 
-  if (!formData.value.apiUrl || !formData.value.authorization) {
-    error.value = 'API URL and Authorization are required'
+  if (!formData.value.apiUrl) {
+    error.value = 'API URL  are required'
     return
   }
 
@@ -53,20 +47,18 @@ const getCredentials = async () => {
   tokenData.value = null
 
   try {
-    const params = new URLSearchParams({
-      grant_type: formData.value.grant_type,
-      client_id: formData.value.client_id,
-      username: formData.value.username,
-      password: formData.value.password,
-    })
-
     const response = await fetch(formData.value.apiUrl, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
       headers: {
-        Authorization: formData.value.authorization,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json, text/plain, */*',
+        'Content-Type': 'application/json',
       },
-      body: params,
+      body: JSON.stringify({
+        username: formData.value.username,
+        password: formData.value.password,
+      }),
     })
 
     const data = await response.json()
@@ -174,21 +166,6 @@ const copyToken = async () => {
                   />
                   <small class="text-muted">Enter the complete API endpoint URL</small>
                 </div>
-                <div class="col-12">
-                  <label class="form-label fw-semibold" for="authorization">
-                    Authorization Header <span class="text-danger">*</span>
-                  </label>
-                  <textarea
-                    class="form-control font-monospace"
-                    id="authorization"
-                    v-model="formData.authorization"
-                    placeholder="Authorization method"
-                    rows="2"
-                    :disabled="loading"
-                    required
-                  ></textarea>
-                  <small class="text-muted">Format: Basic [base64_encoded_credentials]</small>
-                </div>
               </div>
             </div>
 
@@ -227,36 +204,6 @@ const copyToken = async () => {
                     :disabled="loading"
                     required
                   />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-semibold" for="client_id">
-                    Client ID <span class="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="client_id"
-                    v-model="formData.client_id"
-                    placeholder="Enter client ID"
-                    :disabled="loading"
-                    required
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-semibold" for="grant_type">
-                    Grant Type <span class="text-danger">*</span>
-                  </label>
-                  <select
-                    class="form-select"
-                    id="grant_type"
-                    v-model="formData.grant_type"
-                    :disabled="loading"
-                    required
-                  >
-                    <option value="password">password</option>
-                    <option value="client_credentials">client_credentials</option>
-                    <option value="refresh_token">refresh_token</option>
-                  </select>
                 </div>
               </div>
             </div>
