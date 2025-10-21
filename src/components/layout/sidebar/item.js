@@ -75,20 +75,20 @@ export const sideBarItem = [
       // },
     ],
   },
-  { type: 'caption', title: 'Integration' },
-  {
-    type: 'submenu',
-    title: 'Push Data NJF',
-    icon: 'ti-layout-grid',
-    children: [
-      {
-        type: 'link',
-        title: 'PUSH PPD',
-        to: '/push-ppd',
-        external: false,
-      },
-    ],
-  },
+  // { type: 'caption', title: 'Integration' },
+  // {
+  //   type: 'submenu',
+  //   title: 'Push Data NJF',
+  //   icon: 'ti-layout-grid',
+  //   children: [
+  //     {
+  //       type: 'link',
+  //       title: 'PUSH PPD',
+  //       to: '/push-ppd',
+  //       external: false,
+  //     },
+  //   ],
+  // },
   // { type: 'caption', title: 'Home' },
   // { type: 'link', title: 'Dashboard', to: '/dashboard', icon: 'ti-home' },
   // {
