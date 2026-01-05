@@ -560,7 +560,8 @@ export const allFieldMapping = [
     jsonKey: 'FUND_OBJT_PURPOSE',
     type: 'STRING',
     isRequired: false,
-    description: 'DP_OBJT_PURPOSE JIKA 0 MAKA OBJECT DOC TIDAK PERNAH 1 (PROPOSE NON PRODUCTIVE), DP_OBJT_PURPOSE JIKA 1 MAKA OBJECT DOC BISA 1 & 0 (PROPOSE PRODUCTIVE)',
+    description:
+      'DP_OBJT_PURPOSE JIKA 0 MAKA OBJECT DOC TIDAK PERNAH 1 (PROPOSE NON PRODUCTIVE), DP_OBJT_PURPOSE JIKA 1 MAKA OBJECT DOC BISA 1 & 0 (PROPOSE PRODUCTIVE)',
   },
   {
     njfKey: 'JF_OBJT_YEAR',
@@ -608,7 +609,7 @@ export const allFieldMapping = [
     njfKey: 'JF_PROGRAM',
     jsonKey: 'FUND_PROGRAM',
     type: 'STRING',
-    isRequired: true,
+    isRequired: false,
     description: 'Tipe Program',
   },
   {
@@ -674,4 +675,4 @@ export const allFieldMapping = [
     isRequired: false,
     description: 'upping interest',
   },
-];
+]

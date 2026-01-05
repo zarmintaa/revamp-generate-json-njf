@@ -8,7 +8,7 @@ const principal = ref(25000000)
 const tenure = ref(24)
 const annualRate = ref(12)
 const calculationMethod = ref('annuity') // 'annuity' or 'flat'
-const roundingOption = ref('thousand')
+const roundingOption = ref('ten')
 
 const principalInput = ref(principal.value)
 const tenureInput = ref(tenure.value)
@@ -35,12 +35,14 @@ const formatCurrency = (amount) => {
 }
 
 const roundHalfUp = (num, decimals = 0) => {
-  const multiplier = Math.pow(10, decimals);
-  return Math.floor(num * multiplier + 0.5) / multiplier;
+  const multiplier = Math.pow(10, decimals)
+  return Math.floor(num * multiplier + 0.5) / multiplier
 }
 
 const roundAmount = (amount, option) => {
   switch (option) {
+    case 'ten':
+      return roundHalfUp(amount/10)*10
     case 'hundred':
       return roundHalfUp(amount / 100) * 100
     case 'thousand':
@@ -53,7 +55,6 @@ const roundAmount = (amount, option) => {
       return roundHalfUp(amount)
   }
 }
-
 
 // ==========================================================
 // --- PMT FUNCTION  ---
@@ -226,31 +227,31 @@ const downloadHandler = async () => {
             <div class="col-md-3">
               <label class="form-label fw-semibold">Pokok Pinjaman</label>
               <input
-                  type="number"
-                  class="form-control"
-                  v-model.number="principalInput"
-                  placeholder="25000000"
+                type="number"
+                class="form-control"
+                v-model.number="principalInput"
+                placeholder="25000000"
               />
             </div>
 
             <div class="col-md-3">
               <label class="form-label fw-semibold">Tenor (Bulan)</label>
               <input
-                  type="number"
-                  class="form-control"
-                  v-model.number="tenureInput"
-                  placeholder="24"
+                type="number"
+                class="form-control"
+                v-model.number="tenureInput"
+                placeholder="24"
               />
             </div>
 
             <div class="col-md-3">
               <label class="form-label fw-semibold">Rate Tahunan (%)</label>
               <input
-                  type="number"
-                  step="0.1"
-                  class="form-control"
-                  v-model.number="annualRateInput"
-                  placeholder="12"
+                type="number"
+                step="0.1"
+                class="form-control"
+                v-model.number="annualRateInput"
+                placeholder="12"
               />
             </div>
 
@@ -322,28 +323,28 @@ const downloadHandler = async () => {
           <div class="table-responsive">
             <table class="table table-hover">
               <thead>
-              <tr>
-                <th>Bulan</th>
-                <th class="text-end">Total Angsuran</th>
-                <th class="text-end">Pokok</th>
-                <th class="text-end">Bunga</th>
-                <th class="text-end">Sisa Pokok</th>
-              </tr>
+                <tr>
+                  <th>Bulan</th>
+                  <th class="text-end">Total Angsuran</th>
+                  <th class="text-end">Pokok</th>
+                  <th class="text-end">Bunga</th>
+                  <th class="text-end">Sisa Pokok</th>
+                </tr>
               </thead>
               <tbody>
-              <tr v-for="payment in finalSchedule" :key="payment.month">
-                <td class="fw-semibold">{{ payment.month }}</td>
-                <td class="text-end">{{ formatCurrency(payment.monthlyPayment) }}</td>
-                <td class="text-end text-success">
-                  {{ formatCurrency(payment.principalPayment) }}
-                </td>
-                <td class="text-end text-warning">
-                  {{ formatCurrency(payment.interestPayment) }}
-                </td>
-                <td class="text-end fw-semibold">
-                  {{ formatCurrency(payment.remainingBalance) }}
-                </td>
-              </tr>
+                <tr v-for="payment in finalSchedule" :key="payment.month">
+                  <td class="fw-semibold">{{ payment.month }}</td>
+                  <td class="text-end">{{ formatCurrency(payment.monthlyPayment) }}</td>
+                  <td class="text-end text-success">
+                    {{ formatCurrency(payment.principalPayment) }}
+                  </td>
+                  <td class="text-end text-warning">
+                    {{ formatCurrency(payment.interestPayment) }}
+                  </td>
+                  <td class="text-end fw-semibold">
+                    {{ formatCurrency(payment.remainingBalance) }}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>

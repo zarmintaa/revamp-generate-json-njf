@@ -1,13 +1,16 @@
 <script setup>
 import { useRoute } from 'vue-router'
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { allFieldMapping } from '@/utils/fieldMapping.js'
 import { downloadExcelFile, exportToExcel, formatDataForExport } from '@/utils/excelExport.js'
-import { formatReadableDate } from '@/utils/dayjs.js'
 import { useToast } from '@/composables/useToast.js'
+import { getCryptoRandom } from '@/utils/getCryptoRandom.js'
+import { useVehicleGenerator } from '@/utils/vehicleNumberGenerator'
+import { mapBatchToFormData } from '@/utils/vehicleNumberGenerator'
 
 const route = useRoute()
 const title = route.meta?.title || 'Generate Master PPD'
+const { generateForPKs } = useVehicleGenerator()
 
 /* STATE NEW PPD */
 const allFields = allFieldMapping
@@ -16,15 +19,119 @@ const allFields = allFieldMapping
 const formData = reactive({})
 const errors = reactive({})
 const isSubmitting = ref(false)
-const showDebug = ref(true) // Set to true for development
+const showDebug = ref(true)
 
 // Field customization state
-const showFieldCustomizer = ref(false)
 const selectedFields = ref(new Set())
 
-const toast = useToast()
+// Generate PK state
+const branchCode = ref('0101')
+const year = ref(new Date().getFullYear())
+const quantity = ref(10)
 
-// Initialize selected fields with all required fields and some optional ones
+// Bulk generation state
+const isGenerating = ref(false)
+const generatedData = ref([])
+const generationProgress = ref(0)
+
+const toast = useToast()
+let sequenceCounter = Date.now() % 1000000
+
+// Generate PK Numbers
+const generateDummyDataMaster = () => {
+  const results = new Set()
+  let sequence = 0
+  const totalPk = quantity.value
+
+  for (let i = 0; i < totalPk; i++) {
+    const microTime = (performance.now() * 1000).toString().replace('.', '').slice(-6)
+    const cryptoRandom = getCryptoRandom(4)
+    const counter = (sequenceCounter++).toString().padStart(2, '0').slice(-2)
+
+    const mixed = (microTime + cryptoRandom + counter).slice(-6)
+    const pkNumber = branchCode.value + year.value + mixed
+    sequence++
+
+    results.add({ sequence, pkNumber })
+
+    if (i % 100 === 0) {
+      const now = Date.now()
+      while (Date.now() - now < 1) {
+        /* tiny delay */
+      }
+    }
+  }
+
+  return Array.from(results)
+}
+
+// ⭐ Generate Bulk PK + Vehicle Numbers
+const handleGenerateBulk = () => {
+  if (quantity.value < 1 || quantity.value > 10000) {
+    toast.error('Jumlah harus antara 1 sampai 10.000')
+    return
+  }
+
+  if (!branchCode.value || branchCode.value.length !== 4) {
+    toast.error('Kode cabang harus 4 digit')
+    return
+  }
+
+  isGenerating.value = true
+  generationProgress.value = 0
+
+  try {
+    const pkNumbers = generateDummyDataMaster()
+
+    const result = generateForPKs(pkNumbers, 'USER001', 'car', 'Toyota', (progress) => {
+      generationProgress.value = progress.progress
+    })
+
+    if (result.success) {
+      generatedData.value = mapBatchToFormData(result.data)
+
+      toast.success(`Berhasil generate ${generatedData.value.length} data`)
+
+      // Close modal after success
+      const modal = bootstrap.Modal.getInstance(document.getElementById('setupCreateBulkPk'))
+      if (modal) modal.hide()
+
+      // Auto download after generation
+      setTimeout(() => {
+        handleDownloadBulk()
+      }, 500)
+    } else {
+      toast.error(result.error || 'Gagal generate data')
+    }
+  } catch (error) {
+    console.error('Generate error:', error)
+    toast.error('Terjadi kesalahan saat generate data')
+  } finally {
+    isGenerating.value = false
+    generationProgress.value = 0
+  }
+}
+
+// Download bulk data
+const handleDownloadBulk = async () => {
+  if (generatedData.value.length === 0) {
+    toast.error('Tidak ada data untuk di-download')
+    return
+  }
+
+  const fileName = `Generate_Master_Bulk_${branchCode.value}_${new Date().toISOString()}.xlsx`
+
+  try {
+    const data = await exportToExcel(formatDataForExport(generatedData.value), fileName)
+    downloadExcelFile(data.buffer, fileName)
+    toast.success('File berhasil di-download')
+  } catch (error) {
+    console.error('Download error:', error)
+    toast.error('Gagal download file')
+  }
+}
+
+// Initialize selected fields with all required fields
 const initializeSelectedFields = () => {
   const requiredFields = allFields.filter((field) => field.isRequired).map((field) => field.jsonKey)
   selectedFields.value = new Set(requiredFields)
@@ -77,17 +184,12 @@ const deselectAllOptionalFields = () => {
   })
 }
 
-const applyFieldCustomization = () => {
-  showFieldCustomizer.value = false
-}
-
 const resetFieldSelection = () => {
   initializeSelectedFields()
 }
 
 // Validation
 const validateForm = () => {
-  // Clear previous errors
   Object.keys(errors).forEach((key) => delete errors[key])
 
   let isValid = true
@@ -95,7 +197,6 @@ const validateForm = () => {
   displayedFields.value.forEach((field) => {
     const value = formData[field.jsonKey]
 
-    // Required field validation
     if (field.isRequired) {
       if (field.type === 'CHECKBOX' && !value) {
         errors[field.jsonKey] = `${field.description} harus dicentang`
@@ -106,7 +207,6 @@ const validateForm = () => {
       }
     }
 
-    // Type-specific validation
     if (value && value !== '') {
       if (field.type === 'EMAIL') {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -133,13 +233,11 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    // Filter form data to only include displayed fields
     const filteredFormData = {}
     displayedFields.value.forEach((field) => {
       filteredFormData[field.jsonKey] = formData[field.jsonKey]
     })
 
-    // FIX: Pass filtered data to downloadHandler
     await downloadHandlerWithData(filteredFormData)
   } catch (error) {
     console.error('Submit error:', error)
@@ -185,24 +283,9 @@ const fillSampleData = () => {
   formData.FUND_SALES_THROUGH = '01'
 }
 
-// Computed properties
-const isFormValid = computed(() => {
-  return displayedFields.value.every((field) => {
-    if (!field.isRequired) return true
-    const value = formData[field.jsonKey]
-    if (field.type === 'CHECKBOX') {
-      return value === true
-    }
-    return value && value !== ''
-  })
-})
-
 const downloadHandlerWithData = async (dataToExport) => {
   const fileName = `Generate Master ${new Date().toISOString()}.xlsx`
-
-  // Convert single object to array
   const dataArray = [dataToExport]
-
   const data = await exportToExcel(formatDataForExport(dataArray), fileName)
   downloadExcelFile(data.buffer, fileName)
 }
@@ -224,7 +307,15 @@ const downloadHandlerWithData = async (dataToExport) => {
               <i class="fas fa-cogs me-1"></i>
               Customize Fields
             </button>
-            <button type="button" class="btn btn-outline-primary">Create Bulk</button>
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#setupCreateBulkPk"
+            >
+              <i class="fas fa-layer-group me-1"></i>
+              Create Bulk
+            </button>
           </div>
         </div>
       </div>
@@ -363,11 +454,129 @@ const downloadHandlerWithData = async (dataToExport) => {
       </div>
     </div>
 
+    <!-- Create Bulk Modal -->
+    <div
+      class="modal fade"
+      tabindex="-1"
+      aria-hidden="false"
+      id="setupCreateBulkPk"
+      aria-labelledby="setupCreateBulkPkLabel"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="setupCreateBulkPkLabel">
+              <i class="fas fa-layer-group me-2"></i>
+              Create Bulk Data
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info">
+              <small>
+                <i class="fas fa-info-circle me-1"></i>
+                Generate multiple PK numbers dengan nomor rangka dan nomor mesin otomatis
+              </small>
+            </div>
+
+            <form @submit.prevent="handleGenerateBulk">
+              <div class="mb-3">
+                <label for="bulkBranchCode" class="form-label">
+                  Kode Cabang
+                  <span class="text-danger">*</span>
+                </label>
+                <input
+                  id="bulkBranchCode"
+                  v-model="branchCode"
+                  type="text"
+                  class="form-control"
+                  placeholder="Contoh: 0101"
+                  maxlength="4"
+                  required
+                  :disabled="isGenerating"
+                />
+                <small class="text-muted">4 digit kode cabang</small>
+              </div>
+
+              <div class="mb-3">
+                <label for="bulkQuantity" class="form-label">
+                  Jumlah Data
+                  <span class="text-danger">*</span>
+                </label>
+                <input
+                  id="bulkQuantity"
+                  v-model.number="quantity"
+                  type="number"
+                  class="form-control"
+                  placeholder="Masukkan jumlah"
+                  min="1"
+                  max="10000"
+                  required
+                  :disabled="isGenerating"
+                />
+                <small class="text-muted">Maksimal 10.000 data</small>
+              </div>
+
+              <!-- Progress Bar -->
+              <div v-if="isGenerating" class="mb-3">
+                <div class="progress">
+                  <div
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                    role="progressbar"
+                    :style="{ width: generationProgress + '%' }"
+                    :aria-valuenow="generationProgress"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  >
+                    {{ generationProgress }}%
+                  </div>
+                </div>
+                <small class="text-muted d-block mt-2 text-center">
+                  Generating data, please wait...
+                </small>
+              </div>
+
+              <div class="alert alert-warning">
+                <small>
+                  <strong>Info:</strong> Setelah generate selesai, file akan otomatis ter-download
+                </small>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              :disabled="isGenerating"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="handleGenerateBulk"
+              :disabled="isGenerating"
+            >
+              <span v-if="isGenerating" class="spinner-border spinner-border-sm me-2"></span>
+              <i v-else class="fas fa-play me-1"></i>
+              {{ isGenerating ? 'Generating...' : 'Generate' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Field Customizer Modal -->
     <div
       class="modal fade"
       tabindex="-1"
-      aria-hidden="true"
+      aria-hidden="false"
       id="setupCustomizeFields"
       aria-labelledby="setupCustomizeFields"
     >
@@ -539,5 +748,14 @@ pre {
 .alert-light {
   background-color: #f8f9fa;
   border-color: #dee2e6;
+}
+
+.progress {
+  height: 25px;
+}
+
+.progress-bar {
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 </style>
