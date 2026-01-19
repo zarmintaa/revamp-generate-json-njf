@@ -31,10 +31,17 @@ export const sideBarItem = [
       },
       {
         type: 'link',
+        title: 'RS-RESCHD',
+        to: '/generate-rs-schd',
+        external: false,
+      },
+      {
+        type: 'link',
         title: 'RC-SCHD',
         to: '/generate-rc-schd',
         external: false,
       },
+
       {
         type: 'link',
         title: 'CANCEL-PPD',

@@ -108,7 +108,7 @@ const annuitySummary = computed(() => {
 })
 
 // ==========================================================
-// --- FLAT RATE CALCULATION (LOGIKA BARU) ---
+// --- FLAT RATE CALCULATION ---
 // ==========================================================
 const flatPrincipalPerMonth = computed(() => {
   if (numPayments.value === 0) return 0

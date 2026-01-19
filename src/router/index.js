@@ -40,6 +40,14 @@ const router = createRouter({
           },
         },
         {
+          path: 'generate-rs-schd',
+          name: 'generate-rs-schd',
+          component: () => import('@/views/generate/GenerateRsSchd.vue'),
+          meta: {
+            title: 'Generate RS-SCHD',
+          },
+        },
+        {
           path: 'generate-re-schd',
           name: 'generate-re-schd',
           component: () => import('@/views/generate/GenerateReSchd.vue'),
